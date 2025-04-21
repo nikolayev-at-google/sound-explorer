@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.google.experiment.soundexplorer"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.google.experiment.soundexplorer"
