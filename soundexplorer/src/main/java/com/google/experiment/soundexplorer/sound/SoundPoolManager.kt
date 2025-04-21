@@ -2,10 +2,8 @@ package com.google.experiment.soundexplorer.sound
 
 import android.content.Context
 import android.media.AudioAttributes
-import android.media.AudioAttributes.CONTENT_TYPE_MUSIC
 import android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION
 import android.media.AudioAttributes.USAGE_ASSISTANCE_SONIFICATION
-import android.media.AudioAttributes.USAGE_MEDIA
 import android.media.SoundPool
 import androidx.xr.scenecore.Entity
 import androidx.xr.scenecore.PointSourceAttributes

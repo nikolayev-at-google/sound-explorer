@@ -1,6 +1,5 @@
 package com.google.experiment.soundexplorer.cur
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.xr.runtime.math.Pose
 import androidx.xr.scenecore.Session

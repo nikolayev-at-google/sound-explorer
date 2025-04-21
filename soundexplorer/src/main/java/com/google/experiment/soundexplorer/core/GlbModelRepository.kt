@@ -1,6 +1,5 @@
 package com.google.experiment.soundexplorer.core
 
-import androidx.xr.scenecore.Session as SceneCoreSession // Alias for clarity
 import androidx.xr.scenecore.Model
 
 
@@ -9,13 +8,6 @@ import androidx.xr.scenecore.Model
  * Abstracts the data source (SceneCoreSession, network, etc.) and caching.
  */
 interface GlbModelRepository {
-    /**
-     * Initializes the repository with the necessary SceneCoreSession.
-     * Must be called before attempting to load models.
-     * Idempotent: subsequent calls with the same session should be safe.
-     * @param session The active SceneCoreSession.
-     */
-//    fun initializeSession(session: SceneCoreSession)
 
     /**
      * Gets a model by its identifier, loading it if necessary.
