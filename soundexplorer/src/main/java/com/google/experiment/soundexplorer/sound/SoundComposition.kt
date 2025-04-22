@@ -225,17 +225,17 @@ class SoundComposition (
         this.soundsInitialized = true
     }
 
-    fun play() {
+    fun play(): Boolean {
         synchronized(this) {
             if (this._state.value != State.READY && this._state.value != State.STOPPED) {
-                return
+                return false
             }
 
             this._state.value = State.PLAYING
 
             if (!this.soundsInitialized) {
                 initializeSounds()
-                return // calling initialize sounds will set volumes appropriately, no need to continue.
+                return true // calling initialize sounds will set volumes appropriately, no need to continue.
             }
 
             for (compositionComponent in compositionComponents) {
@@ -244,13 +244,15 @@ class SoundComposition (
                     if (compositionComponent.isPlaying) 1.0f else 0.0f
                 )
             }
+
+            return true
         }
     }
 
-    fun stop() {
+    fun stop(): Boolean {
         synchronized(this) {
             if (this._state.value != State.PLAYING) {
-                return
+                return false
             }
 
             this._state.value = State.STOPPED
@@ -258,6 +260,8 @@ class SoundComposition (
             for (compositionComponent in this.compositionComponents) {
                 this.soundPoolManager.setVolume(compositionComponent.activeSoundStreamId, 0.0f)
             }
+
+            return true
         }
     }
 }
