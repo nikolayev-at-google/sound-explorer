@@ -67,6 +67,7 @@ class MainActivity : ComponentActivity() {
     private var userDialogForward: Pose by mutableStateOf(Pose(Vector3(0.0f, 1.0f, -1.5f)))
 //    private var userForward: Pose by mutableStateOf(Pose(Vector3(0.0f, -0.8f, -1.5f))) // for emulator
     private var userForward: Pose by mutableStateOf(Pose(Vector3(0.0f, -0.1f, -2.0f)))// for device
+    private var playOnResume: Boolean = false;
 
     private var modelsLoaded: Boolean by mutableStateOf(false)
     private var soundObjectsReady: Boolean by mutableStateOf(false)
@@ -138,6 +139,20 @@ class MainActivity : ComponentActivity() {
         createModels(GlbModel.allGlbAnimatedModels, GlbModel.allGlbInactiveModels)
 
         createHeadLockedDialogUi()
+    }
+
+    override fun onPause() {
+        super.onPause()
+
+        playOnResume = viewModel.soundComposition.stop()
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        if (playOnResume) {
+            viewModel.soundComposition.play()
+        }
     }
 
     private fun createPanelView(
