@@ -45,6 +45,7 @@ import com.google.experiment.soundexplorer.core.GlbModel
 import com.google.experiment.soundexplorer.core.GlbModelRepository
 import com.google.experiment.soundexplorer.sound.SoundComposition
 import com.google.experiment.soundexplorer.ui.SoundObjectComponent
+import com.google.experiment.soundexplorer.ui.update.ShapeAppScreen
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.joinAll
@@ -195,7 +196,7 @@ class MainActivity : ComponentActivity() {
     private fun createHeadLockedPanelUi() {
         val headLockedPanelView = createPanelView(this) {
             if (soundObjectsReady && modelsLoaded) {
-                ToolbarContent()
+                ShapeAppScreen()
             } else {
                 Box(
                     modifier = Modifier
@@ -218,7 +219,8 @@ class MainActivity : ComponentActivity() {
         val headLockedPanel = createPanelUi(
             session = sceneCoreSession,
             view = headLockedPanelView,
-            surfaceDimensionsPx = Dimensions(440f, 170f),
+            surfaceDimensionsPx = Dimensions(2000f, 400f),
+//            surfaceDimensionsPx = Dimensions(440f, 170f),
             dimensions = Dimensions(2f, 7f),
             panelName = "headLockedPanel",
             pose = userForward
