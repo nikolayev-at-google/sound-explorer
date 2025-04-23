@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +38,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import com.google.experiment.soundexplorer.R
+import com.google.experiment.soundexplorer.cur.MainViewModel
 
 
 // ViewModel to manage UI state
@@ -46,7 +46,10 @@ import com.google.experiment.soundexplorer.R
 
 // Main Composable for the Shape App UI
 @Composable
-fun ShapeAppScreen(viewModel: ShapeAppViewModel = viewModel()) {
+fun ShapeAppScreen(
+    viewModel: ShapeAppViewModel = viewModel(),
+    mainViewModel: MainViewModel = viewModel()
+) {
     Box(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -65,7 +68,7 @@ fun ShapeAppScreen(viewModel: ShapeAppViewModel = viewModel()) {
         MainNavigationPanel(
             hasSpawnedShapes = viewModel.hasSpawnedShapes,
             isSoundPaused = viewModel.isSoundPaused.value,
-            onRestartClick = { viewModel.restartShapes() },
+            onRestartClick = { mainViewModel.showDialog() },
             onPlayPauseClick = { viewModel.toggleSoundPause() },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -184,7 +187,11 @@ fun ShapeButton(
         contentAlignment = Alignment.Center,
         modifier = modifier.hoverable(interactionSource = interactionSource)
             .size(96.dp)
-            .clickable(onClick = {onClick()})
+            .clickable(
+                onClick = {onClick()},
+                indication = null,
+                interactionSource = interactionSource
+            )
             .background(color = Color.Transparent)
     ) {
         // Show translucent container when hovered

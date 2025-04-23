@@ -33,12 +33,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import androidx.xr.runtime.math.Pose
 import androidx.xr.runtime.math.Quaternion
 import androidx.xr.runtime.math.Vector3
-import androidx.xr.scenecore.ContentlessEntity
 import androidx.xr.scenecore.Dimensions
-import androidx.xr.scenecore.GltfModel
-import androidx.xr.scenecore.GltfModelEntity
-import androidx.xr.scenecore.InputEvent
-import androidx.xr.scenecore.InteractableComponent
 import androidx.xr.scenecore.PanelEntity
 import androidx.xr.scenecore.Session
 import com.google.experiment.soundexplorer.core.GlbModel
@@ -48,10 +43,10 @@ import com.google.experiment.soundexplorer.ui.SoundObjectComponent
 import com.google.experiment.soundexplorer.ui.update.ShapeAppScreen
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.getValue
+import com.google.experiment.soundexplorer.ui.update.ShapeAppViewModel
 
 
 @AndroidEntryPoint
@@ -60,17 +55,14 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var modelRepository : GlbModelRepository
     private val viewModel : MainViewModel by viewModels()
+    private val shapeViewModel : ShapeAppViewModel by viewModels()
     private val sceneCoreSession by lazy { Session.create(this) }
     private var soundComponents: Array<SoundComposition.SoundCompositionComponent>? = null
     private var soundObjects: Array<SoundObjectComponent>? = null
-    private val activeMenuObjects = mutableListOf<GltfModelEntity>()
-    private val inactiveMenuObjects = mutableListOf<GltfModelEntity>()
-    private var userDialogForward: Pose by mutableStateOf(Pose(Vector3(0.0f, 1.0f, -1.5f)))
+    private var userDialogForward: Pose by mutableStateOf(Pose(Vector3(0.0f, 1.0f, -1.0f)))
 //    private var userForward: Pose by mutableStateOf(Pose(Vector3(0.0f, -0.8f, -1.5f))) // for emulator
     private var userForward: Pose by mutableStateOf(Pose(Vector3(0.0f, -0.1f, -2.0f)))// for device
     private var playOnResume: Boolean = false;
-
-    private var modelsLoaded: Boolean by mutableStateOf(false)
     private var soundObjectsReady: Boolean by mutableStateOf(false)
 
     fun createSoundObjects(
@@ -134,12 +126,34 @@ class MainActivity : ComponentActivity() {
         viewModel.initializeSoundComposition(sceneCoreSession)
 
         lifecycleScope.launch { initializeSoundsAndCreateObjects() }
-        lifecycleScope.launch { loadModels() }
 
         createHeadLockedPanelUi()
-        createModels(GlbModel.allGlbAnimatedModels, GlbModel.allGlbInactiveModels)
 
         createHeadLockedDialogUi()
+
+        shapeViewModel.menuListener = object : ShapeAppViewModel.MenuListener {
+            override fun onShapeClick(shapeIndex: Int) {
+                val initialLocation = checkNotNull(sceneCoreSession.spatialUser.head).transformPoseTo(
+                    Pose(Vector3.Forward * 1.0f, Quaternion.Identity),
+                    sceneCoreSession.activitySpace)
+
+                val soundObject = checkNotNull(soundObjects)[shapeIndex]
+                soundObject.setPose(initialLocation)
+                soundObject.hidden = false
+                soundObject.soundComponent.play()
+                viewModel.updateSoundObjectsVisibility(
+                    soundObjects?.all { so -> so.hidden } ?: false
+                )
+            }
+            override fun onRecallClick(shapeIndex: Int) {
+                val soundObject = checkNotNull(soundObjects)[shapeIndex]
+                soundObject.soundComponent.stop()
+                soundObject.hidden = true
+                viewModel.updateSoundObjectsVisibility(
+                    soundObjects?.all { so -> so.hidden } ?: false
+                )
+            }
+        }
     }
 
     override fun onPause() {
@@ -154,6 +168,7 @@ class MainActivity : ComponentActivity() {
         if (playOnResume) {
             viewModel.soundComposition.play()
         }
+
     }
 
     private fun createPanelView(
@@ -195,7 +210,7 @@ class MainActivity : ComponentActivity() {
 
     private fun createHeadLockedPanelUi() {
         val headLockedPanelView = createPanelView(this) {
-            if (soundObjectsReady && modelsLoaded) {
+            if (soundObjectsReady) {
                 ShapeAppScreen()
             } else {
                 Box(
@@ -219,8 +234,7 @@ class MainActivity : ComponentActivity() {
         val headLockedPanel = createPanelUi(
             session = sceneCoreSession,
             view = headLockedPanelView,
-            surfaceDimensionsPx = Dimensions(2000f, 400f),
-//            surfaceDimensionsPx = Dimensions(440f, 170f),
+            surfaceDimensionsPx = Dimensions(2000f, 450f),
             dimensions = Dimensions(2f, 7f),
             panelName = "headLockedPanel",
             pose = userForward
@@ -240,109 +254,6 @@ class MainActivity : ComponentActivity() {
         view.postOnAnimation { updateHeadLockedPose(view, panelEntity) }
     }
 
-    // Loading models is slow. We need to load all of them before allowing the user to interact with the app.
-    private suspend fun loadModels() {
-        val loadActiveModelsJobs = GlbModel.allGlbAnimatedModels.map {
-            m -> lifecycleScope.launch { modelRepository.getOrLoadModel(m) }
-        }
-        val loadInactiveModelsJobs = GlbModel.allGlbInactiveModels.map {
-            m -> lifecycleScope.launch { modelRepository.getOrLoadModel(m) }
-        }
-        loadActiveModelsJobs.joinAll()
-        loadInactiveModelsJobs.joinAll()
-        modelsLoaded = true
-    }
-
-    private fun createModels(
-        activeModels: List<GlbModel>,
-        inactiveModels: List<GlbModel>
-    ) {
-        if (activeModels.size != inactiveModels.size) {
-            throw IllegalArgumentException("The number of active and inactive sound obj models with not equal!")
-        }
-
-        lifecycleScope.launch {
-            val menu = ContentlessEntity.create(sceneCoreSession, "menu")
-
-            var delta = 0.6f
-            for (i in 0..<(activeModels.size)) {
-                val shapeActiveModel = modelRepository.getOrLoadModel(activeModels[i]).getOrNull() as GltfModel?
-                val shapeInactiveModel = modelRepository.getOrLoadModel(inactiveModels[i]).getOrNull() as GltfModel?
-
-                val shapeActiveEntity = GltfModelEntity.create(sceneCoreSession, checkNotNull(shapeActiveModel)).apply {
-                    setParent(menu)
-                    setPose(Pose(Vector3(delta, 0.15f, 0.0f), Quaternion.Identity))
-                }
-                val shapeInactiveEntity = GltfModelEntity.create(sceneCoreSession, checkNotNull(shapeInactiveModel)).apply {
-                    setParent(menu)
-                    setPose(Pose(Vector3(delta, 0.15f, 0.0f), Quaternion.Identity))
-                }
-
-                shapeActiveEntity.addComponent(
-                    InteractableComponent.create(sceneCoreSession, mainExecutor) { ie ->
-                        if (ie.action == InputEvent.ACTION_DOWN) {
-                            shapeInactiveEntity.setHidden(false)
-                            // shapeInactiveEntity.startAnimation(loop = false)
-                            shapeActiveEntity.setHidden(true)
-
-                            val initialLocation = checkNotNull(sceneCoreSession.spatialUser.head).transformPoseTo(
-                                Pose(Vector3.Forward * 1.0f, Quaternion.Identity),
-                                sceneCoreSession.activitySpace)
-
-                            val soundObject = checkNotNull(soundObjects)[i]
-                            soundObject.setPose(initialLocation)
-                            soundObject.hidden = false
-                            soundObject.soundComponent.play()
-                            viewModel.updateSoundObjectsVisibility(
-                                soundObjects?.all { so -> so.hidden } ?: false
-                            )
-                        } else if (ie.action == InputEvent.ACTION_HOVER_ENTER) {
-                            shapeActiveEntity.setScale(1.4f)
-                        } else if (ie.action == InputEvent.ACTION_HOVER_EXIT) {
-                            shapeActiveEntity.setScale(1.0f)
-                        }
-                    })
-
-                shapeInactiveEntity.addComponent(
-                    InteractableComponent.create(sceneCoreSession, mainExecutor) { ie ->
-                        if (ie.action == InputEvent.ACTION_DOWN) {
-                            shapeActiveEntity.setHidden(false)
-                            // gltfActiveModelEntity.startAnimation(loop = false)
-                            shapeInactiveEntity.setHidden(true)
-
-                            val soundObject = checkNotNull(soundObjects)[i]
-                            soundObject.soundComponent.stop()
-                            soundObject.hidden = true
-                            viewModel.updateSoundObjectsVisibility(
-                                soundObjects?.all { so -> so.hidden } ?: false
-                            )
-                        } else if (ie.action == InputEvent.ACTION_HOVER_ENTER) {
-                            shapeInactiveEntity.setScale(1.4f)
-                        } else if (ie.action == InputEvent.ACTION_HOVER_EXIT) {
-                            shapeInactiveEntity.setScale(1.0f)
-                        }
-                    })
-                shapeInactiveEntity.setHidden(true)
-
-                activeMenuObjects.add(shapeActiveEntity)
-                inactiveMenuObjects.add(shapeInactiveEntity)
-                delta -= 0.15f
-            }
-
-            launch {
-                viewModel.toolbarPose.collect { toolbarPose ->
-                    menu.setPose(toolbarPose)
-                }
-            }
-
-            launch {
-                viewModel.isModelsVisible.collect {
-                    menu.setHidden(!it)
-                }
-            }
-        }
-    }
-
     private fun createHeadLockedDialogUi() {
         val headLockedDialogPanelView = createPanelView(this) {
             RestartDialogContent()
@@ -359,7 +270,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             viewModel.toolbarPose.collect { toolbarPose ->
                 headLockedDialogPanel.setPose(
-                    toolbarPose.translate(toolbarPose.up * 0.2f)
+                    toolbarPose.translate(toolbarPose.up * 0.25f)
                 )
             }
         }
@@ -377,10 +288,8 @@ class MainActivity : ComponentActivity() {
                         it.hidden = true
                     }
                     viewModel.updateSoundObjectsVisibility(true)
-                    activeMenuObjects.forEach { it.setHidden(false) }
-                    inactiveMenuObjects.forEach { it.setHidden(true) }
-
                     viewModel.showDialog() // switch visibility
+                    shapeViewModel.restartShapes()
                 }
             }
         }
