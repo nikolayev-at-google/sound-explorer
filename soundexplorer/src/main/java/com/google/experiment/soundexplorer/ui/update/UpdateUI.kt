@@ -35,10 +35,12 @@ import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import com.google.experiment.soundexplorer.R
 import com.google.experiment.soundexplorer.cur.MainViewModel
+import com.google.experiment.soundexplorer.sound.SoundComposition
 
 
 // ViewModel to manage UI state
@@ -84,7 +86,8 @@ fun MainNavigationPanel(
     isSoundPaused: Boolean,
     onRestartClick: () -> Unit,
     onPlayPauseClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: MainViewModel = viewModel()
 ) {
     Surface(
         shape = RoundedCornerShape(100.dp),
@@ -116,20 +119,63 @@ fun MainNavigationPanel(
             Spacer(modifier = Modifier.width(32.dp))
 
             // Play/Pause button
-            IconButton(
-                onClick = onPlayPauseClick,
-                enabled = hasSpawnedShapes,
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    painter = if (isSoundPaused)
-                            painterResource(id = R.drawable.ic_play)
-                        else
-                            painterResource(id = R.drawable.ic_pause),
-                    contentDescription = if (isSoundPaused) "Play" else "Pause",
-                    tint = if (hasSpawnedShapes) Color.White else Color.White.copy(alpha = 0.5f),
-                    modifier = Modifier.size(24.dp)
-                )
+            when (viewModel.soundComposition.state.collectAsState().value) {
+                SoundComposition.State.LOADING -> {
+                    IconButton(
+                        onClick = {},
+                        enabled = hasSpawnedShapes,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_play),
+                            contentDescription = "Loading",
+                            tint = Color.White.copy(alpha = 0.5f),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+                SoundComposition.State.READY -> {
+                    IconButton(
+                        onClick = { viewModel.soundComposition.play() },
+                        enabled = hasSpawnedShapes,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_play),
+                            contentDescription = "Play",
+                            tint = if (hasSpawnedShapes) Color.White else Color.White.copy(alpha = 0.5f),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+                SoundComposition.State.PLAYING -> {
+                    IconButton(
+                        onClick = { viewModel.soundComposition.stop() },
+                        enabled = hasSpawnedShapes,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_pause),
+                            contentDescription = "Pause",
+                            tint = if (hasSpawnedShapes) Color.White else Color.White.copy(alpha = 0.5f),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+                SoundComposition.State.STOPPED -> {
+                    IconButton(
+                        onClick = { viewModel.soundComposition.play() },
+                        enabled = hasSpawnedShapes,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_play),
+                            contentDescription = "Play",
+                            tint = if (hasSpawnedShapes) Color.White else Color.White.copy(alpha = 0.5f),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
             }
         }
     }
@@ -185,10 +231,11 @@ fun ShapeButton(
 
     Box(
         contentAlignment = Alignment.Center,
-        modifier = modifier.hoverable(interactionSource = interactionSource)
+        modifier = modifier
+            .hoverable(interactionSource = interactionSource)
             .size(96.dp)
             .clickable(
-                onClick = {onClick()},
+                onClick = { onClick() },
                 indication = null,
                 interactionSource = interactionSource
             )
