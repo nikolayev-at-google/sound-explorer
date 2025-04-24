@@ -1,6 +1,5 @@
 package com.google.experiment.soundexplorer.cur
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,12 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -32,116 +26,150 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.experiment.soundexplorer.sound.SoundComposition
+import androidx.compose.foundation.Image
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.draw.clip
+import com.google.experiment.soundexplorer.R
 
 
+// Main Composable for the Shape App UI
 @Composable
-fun Toolbar(
-    onRefreshClick: () -> Unit,
-    onAddClick: () -> Unit,
-    viewModel: MainViewModel = viewModel(),
-    modifier: Modifier = Modifier
+fun ShapeAppScreen(
+    mainViewModel: MainViewModel = viewModel()
 ) {
-    val isModelsVisible by viewModel.isModelsVisible.collectAsState()
-    val isSoundObjectsVisible by viewModel.isSoundObjectsHidden.collectAsState()
-
     Box(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // Shape options at the top
+        ShapeOptions(
+            shapes = mainViewModel.shapeList,
+            spawnedShapes = mainViewModel.spawnedShapes,
+            onShapeClick = { index -> mainViewModel.spawnShape(index) },
+            onRecallClick = { index -> mainViewModel.recallShape(index) },
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 24.dp)
+        )
+
+        // Main navigation panel at the bottom
+        MainNavigationPanel(
+            hasSpawnedShapes = mainViewModel.hasSpawnedShapes,
+            onRestartClick = { mainViewModel.showDialog() },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 24.dp)
+        )
+    }
+}
+
+// Composable for the Main Navigation Panel
+@Composable
+fun MainNavigationPanel(
+    hasSpawnedShapes: Boolean,
+    onRestartClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: MainViewModel = viewModel()
+) {
+    Surface(
+        shape = RoundedCornerShape(100.dp),
+        color = Color(0xFF333333),
         modifier = modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .background(
-                color = Color(0xFF2D2E31),
-                shape = RoundedCornerShape(28.dp)
-            )
-            .padding(horizontal = 8.dp),
-        contentAlignment = Alignment.Center
+            .height(64.dp)
+            .width(150.dp)
+            .animateContentSize()
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 16.dp)
         ) {
-            // Refresh button
+            // Restart/Reset button
             IconButton(
-                onClick = onRefreshClick,
-                enabled = !isSoundObjectsVisible
+                onClick = onRestartClick,
+                enabled = hasSpawnedShapes,
+                modifier = Modifier.size(48.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = "Refresh",
-                    tint = if (!isSoundObjectsVisible) Color.White else Color.Gray
+                    painter = painterResource(id = R.drawable.ic_restart),
+                    contentDescription = "Reset",
+                    tint = if (hasSpawnedShapes) Color.White else Color.White.copy(alpha = 0.5f),
+                    modifier = Modifier.size(40.dp)
                 )
             }
 
-            // Add button
-            IconButton(
-                onClick = onAddClick,
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(
-                        if (isModelsVisible) Color(0xFFC2E7FF) else Color(0xFFE6E6E6),
-                        CircleShape
-                    )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add",
-                    tint = Color.Black
-                )
-            }
+            Spacer(modifier = Modifier.width(32.dp))
 
-            try {
-                Log.d("", "Toolbar: ${viewModel.soundComposition}")
-            } catch (e: Exception) {
-                return
-            }
-
-            // play/pause button
+            // Play/Pause button
             when (viewModel.soundComposition.state.collectAsState().value) {
                 SoundComposition.State.LOADING -> {
-                    IconButton(onClick = { },
-                        enabled = !isSoundObjectsVisible) {
+                    IconButton(
+                        onClick = {},
+                        enabled = hasSpawnedShapes,
+                        modifier = Modifier.size(48.dp)
+                    ) {
                         Icon(
-                            imageVector = Icons.Outlined.PlayArrow,
+                            painter = painterResource(id = R.drawable.ic_play),
                             contentDescription = "Loading",
-                            tint = Color.Gray
+                            tint = Color.White.copy(alpha = 0.5f),
+                            modifier = Modifier.size(40.dp)
                         )
                     }
                 }
                 SoundComposition.State.READY -> {
-                    IconButton(onClick = { viewModel.soundComposition.play() },
-                        enabled = !isSoundObjectsVisible) {
+                    IconButton(
+                        onClick = { viewModel.soundComposition.play() },
+                        enabled = hasSpawnedShapes,
+                        modifier = Modifier.size(48.dp)
+                    ) {
                         Icon(
-                            imageVector = Icons.Outlined.PlayArrow,
+                            painter = painterResource(id = R.drawable.ic_play),
                             contentDescription = "Play",
-                            tint = if (!isSoundObjectsVisible) Color.White else Color.Gray
+                            tint = if (hasSpawnedShapes) Color.White else Color.White.copy(alpha = 0.5f),
+                            modifier = Modifier.size(40.dp)
                         )
                     }
                 }
                 SoundComposition.State.PLAYING -> {
-                    IconButton(onClick = { viewModel.soundComposition.stop() },
-                        enabled = !isSoundObjectsVisible) {
+                    IconButton(
+                        onClick = { viewModel.soundComposition.stop() },
+                        enabled = hasSpawnedShapes,
+                        modifier = Modifier.size(48.dp)
+                    ) {
                         Icon(
-                            imageVector = ImageVector.vectorResource(com.google.experiment.soundexplorer.R.drawable.ic_pause),
+                            painter = painterResource(id = R.drawable.ic_pause),
                             contentDescription = "Pause",
-                            tint = if (!isSoundObjectsVisible) Color.White else Color.Gray
+                            tint = if (hasSpawnedShapes) Color.White else Color.White.copy(alpha = 0.5f),
+                            modifier = Modifier.size(40.dp)
                         )
                     }
                 }
                 SoundComposition.State.STOPPED -> {
-                    IconButton(onClick = { viewModel.soundComposition.play() },
-                        enabled = !isSoundObjectsVisible) {
+                    IconButton(
+                        onClick = { viewModel.soundComposition.play() },
+                        enabled = hasSpawnedShapes,
+                        modifier = Modifier.size(48.dp)
+                    ) {
                         Icon(
-                            imageVector = Icons.Outlined.PlayArrow,
+                            painter = painterResource(id = R.drawable.ic_play),
                             contentDescription = "Play",
-                            tint = if (!isSoundObjectsVisible) Color.White else Color.Gray
+                            tint = if (hasSpawnedShapes) Color.White else Color.White.copy(alpha = 0.5f),
+                            modifier = Modifier.size(40.dp)
                         )
                     }
                 }
@@ -150,29 +178,124 @@ fun Toolbar(
     }
 }
 
+// Composable for the Shape Options
 @Composable
-fun ToolbarContent(
-    viewModel: MainViewModel = viewModel()
+fun ShapeOptions(
+    shapes: List<Int>,
+    spawnedShapes: List<Int>,
+    onShapeClick: (Int) -> Unit,
+    onRecallClick: (Int) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth(),
-        contentAlignment = Alignment.Center
+    Row(
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
     ) {
-        Toolbar(
-            onRefreshClick = { viewModel.showDialog() },
-            onAddClick = { viewModel.showModels() },
-            modifier = Modifier
-                .padding(bottom = 16.dp)
-                .width(160.dp)
-        )
+        shapes.forEachIndexed { index, shapeRes ->
+            ShapeButton(
+                shapeRes = shapeRes,
+                isSpawned = spawnedShapes.contains(index),
+                onClick = {
+                    if (spawnedShapes.contains(index)) {
+                        onRecallClick(index)
+                    } else {
+                        onShapeClick(index)
+                    }
+                }
+            )
+        }
+    }
+}
+
+// Composable for individual Shape Buttons
+@Composable
+fun ShapeButton(
+    shapeRes: Int,
+    isSpawned: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+
+
+    // MutableInteractionSource to track changes of the component's interactions (like "hovered")
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .hoverable(interactionSource = interactionSource)
+            .size(96.dp)
+            .clickable(
+                onClick = { onClick() },
+                indication = null,
+                interactionSource = interactionSource
+            )
+            .background(color = Color.Transparent)
+    ) {
+        // Show translucent container when hovered
+        if (isHovered) {
+            Box(
+                modifier = Modifier
+                    .size(96.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(
+                        color = if (isPressed)
+                            Color(0xBBCCCCCC)
+                        else
+                            Color(0x33CCCCCC),
+                    )
+                    .border(
+                        width = 3.dp,
+                        color = Color(0xFFE0E0E0),
+                        shape = RoundedCornerShape(24.dp)
+                    )
+            )
+        }
+
+        // Shape icon with appropriate state
+        if (isSpawned) {
+            // Spawned state (25% opacity)
+            if (isHovered) {
+                // Show recall icon when hovering over spawned shape
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_restart),
+                    contentDescription = "Recall shape",
+                    tint = if (isPressed) Color.White else Color.White.copy(alpha = 0.7f),
+                    modifier = Modifier.size(48.dp)
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = shapeRes),
+                    contentDescription = "Shape $shapeRes",
+                    alpha = 0.25f,
+                    modifier = Modifier.size(72.dp)
+                )
+            }
+        } else {
+            // Regular shape with potential hover/press states
+            Image(
+                painter = painterResource(id = shapeRes),
+                contentDescription = "Shape $shapeRes",
+                colorFilter = if (isPressed) {
+                    // Brighter fill when pressed
+                    ColorFilter.lighting(Color.White, Color.White)
+                } else null,
+                modifier = Modifier.size(72.dp)
+            )
+        }
     }
 }
 
 @Preview
 @Composable
-fun ToolbarPreview() {
-    ToolbarContent()
+fun ShapeAppScreenPreview() {
+    ShapeAppScreen()
 }
 
 @Composable
@@ -234,11 +357,11 @@ fun RestartDialogContent(
                     )
                 }
 
+                Spacer(modifier = Modifier.width(16.dp))
+
                 // Cancel Button (positioned to the right of Delete)
                 TextButton(
                     onClick = { viewModel.showDialog() },
-//                            modifier = Modifier
-//                                .padding(start = 160.dp)
                 ) {
                     Text(
                         text = "Cancel",
@@ -249,4 +372,10 @@ fun RestartDialogContent(
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun RestartDialogContentPreview() {
+    RestartDialogContent()
 }

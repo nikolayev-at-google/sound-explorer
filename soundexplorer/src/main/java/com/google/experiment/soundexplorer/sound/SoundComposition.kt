@@ -137,7 +137,7 @@ class SoundComposition (
     }
 
     private fun attachComponent(component: SoundCompositionComponent) {
-        var transitionedToReady: Boolean = false
+        var transitionedToReady = false
 
         synchronized(this) {
             this.unattachedComponents.remove(component)

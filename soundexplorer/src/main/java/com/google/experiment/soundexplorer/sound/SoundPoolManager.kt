@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class SoundPoolManager (maxStreams: Int) {
 
-    private val _soundsLoaded = MutableStateFlow<Boolean>(false)
+    private val _soundsLoaded = MutableStateFlow(false)
     val soundsLoaded: StateFlow<Boolean> = _soundsLoaded.asStateFlow()
 
     private var soundsLoading = AtomicInteger(0)
@@ -38,7 +38,7 @@ class SoundPoolManager (maxStreams: Int) {
                     this._soundsLoaded.value = true
                 }
             } else {
-                throw RuntimeException("Failed to load sound with status ${status}")
+                throw RuntimeException("Failed to load sound with status $status")
             }
         }
     }

@@ -4,6 +4,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+@Suppress("SpellCheckingInspection")
 data class Spacing(
     val xxs : Dp    = 2.dp,
     val xs : Dp     = 4.dp,

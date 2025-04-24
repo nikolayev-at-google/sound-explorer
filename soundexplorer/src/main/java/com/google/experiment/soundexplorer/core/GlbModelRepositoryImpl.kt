@@ -2,7 +2,6 @@ package com.google.experiment.soundexplorer.core
 
 import android.util.Log
 import androidx.xr.scenecore.Model
-import com.google.experiment.soundexplorer.di.IoDispatcher
 import androidx.xr.scenecore.Session as SceneCoreSession // Alias for clarity
 import kotlinx.coroutines.*
 import java.util.concurrent.ConcurrentHashMap
@@ -12,13 +11,11 @@ import com.google.experiment.soundexplorer.ext.loadGltfModel
 
 
 class GlbModelRepositoryImpl @Inject constructor(
-    // Inject the IO dispatcher for background loading tasks
-    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val sceneCoreSession: SceneCoreSession
 ) : GlbModelRepository {
 
     companion object {
-        private const val TAG = "modelss =ModelRepImpl"
+        private const val TAG = "ModelRepImpl"
     }
 
     // Cache for ongoing loading jobs (Deferred ensures only one load per identifier)

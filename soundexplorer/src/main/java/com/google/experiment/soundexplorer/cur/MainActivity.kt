@@ -40,13 +40,11 @@ import com.google.experiment.soundexplorer.core.GlbModel
 import com.google.experiment.soundexplorer.core.GlbModelRepository
 import com.google.experiment.soundexplorer.sound.SoundComposition
 import com.google.experiment.soundexplorer.ui.SoundObjectComponent
-import com.google.experiment.soundexplorer.ui.update.ShapeAppScreen
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.getValue
-import com.google.experiment.soundexplorer.ui.update.ShapeAppViewModel
 
 
 @AndroidEntryPoint
@@ -54,15 +52,15 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var modelRepository : GlbModelRepository
+    @Inject
+    lateinit var sceneCoreSession : Session
     private val viewModel : MainViewModel by viewModels()
-    private val shapeViewModel : ShapeAppViewModel by viewModels()
-    private val sceneCoreSession by lazy { Session.create(this) }
     private var soundComponents: Array<SoundComposition.SoundCompositionComponent>? = null
     private var soundObjects: Array<SoundObjectComponent>? = null
     private var userDialogForward: Pose by mutableStateOf(Pose(Vector3(0.0f, 1.0f, -1.0f)))
 //    private var userForward: Pose by mutableStateOf(Pose(Vector3(0.0f, -0.8f, -1.5f))) // for emulator
-    private var userForward: Pose by mutableStateOf(Pose(Vector3(0.0f, -0.1f, -2.0f)))// for device
-    private var playOnResume: Boolean = false;
+    private var userForward: Pose by mutableStateOf(Pose(Vector3(0.0f, -0.1f, -2.5f)))// for device
+    private var playOnResume: Boolean = false
     private var soundObjectsReady: Boolean by mutableStateOf(false)
 
     fun createSoundObjects(
@@ -79,7 +77,7 @@ class MainActivity : ComponentActivity() {
                 mainExecutor,
                 lifecycleScope)
         }
-        return soundObjs.map({o -> checkNotNull(o)}).toTypedArray()
+        return soundObjs.map { o -> checkNotNull(o) }.toTypedArray()
     }
 
     suspend fun initializeSoundsAndCreateObjects() {
@@ -131,7 +129,7 @@ class MainActivity : ComponentActivity() {
 
         createHeadLockedDialogUi()
 
-        shapeViewModel.menuListener = object : ShapeAppViewModel.MenuListener {
+        viewModel.menuListener = object : MainViewModel.MenuListener {
             override fun onShapeClick(shapeIndex: Int) {
                 val initialLocation = checkNotNull(sceneCoreSession.spatialUser.head).transformPoseTo(
                     Pose(Vector3.Forward * 1.0f, Quaternion.Identity),
@@ -141,17 +139,11 @@ class MainActivity : ComponentActivity() {
                 soundObject.setPose(initialLocation)
                 soundObject.hidden = false
                 soundObject.soundComponent.play()
-                viewModel.updateSoundObjectsVisibility(
-                    soundObjects?.all { so -> so.hidden } ?: false
-                )
             }
             override fun onRecallClick(shapeIndex: Int) {
                 val soundObject = checkNotNull(soundObjects)[shapeIndex]
                 soundObject.soundComponent.stop()
                 soundObject.hidden = true
-                viewModel.updateSoundObjectsVisibility(
-                    soundObjects?.all { so -> so.hidden } ?: false
-                )
             }
         }
     }
@@ -261,7 +253,7 @@ class MainActivity : ComponentActivity() {
         val headLockedDialogPanel = createPanelUi(
             session = sceneCoreSession,
             view = headLockedDialogPanelView,
-            surfaceDimensionsPx = Dimensions(800f, 490f),
+            surfaceDimensionsPx = Dimensions(800f, 430f),
             dimensions = Dimensions(10f, 10f),
             panelName = "headLockedDialogPanel",
             pose = userDialogForward
@@ -287,9 +279,8 @@ class MainActivity : ComponentActivity() {
                         it.soundComponent.stop()
                         it.hidden = true
                     }
-                    viewModel.updateSoundObjectsVisibility(true)
                     viewModel.showDialog() // switch visibility
-                    shapeViewModel.restartShapes()
+                    viewModel.restartShapes()
                 }
             }
         }
