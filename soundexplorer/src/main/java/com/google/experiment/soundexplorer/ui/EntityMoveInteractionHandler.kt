@@ -22,6 +22,7 @@ class EntityMoveInteractionHandler(
         val initialHitDistance: Float,
         val initialHitOffsetFromObjOrigin: Vector3,
         val timeStartNs: Long,
+        val pointerType: Int,
 
         var lastUpdateTimeNs: Long = timeStartNs,
         var currentLinearVelocity: Double = 0.0,
@@ -45,6 +46,12 @@ class EntityMoveInteractionHandler(
     override fun onInputEvent(inputEvent: InputEvent) {
 
         if (inputEvent.action == InputEvent.ACTION_DOWN) {
+            // check if the user tried to simultaneously interact with the object with multiple inputs/hands
+            val ci = this.currentInteraction
+            if (ci != null && ci.pointerType != inputEvent.pointerType) {
+                return
+            }
+
             // inputEvent.hitInfo info doesn't appear to be available yet, so for now construct a plane to approximate the initial ray hit location
             val interactionPlaneP = entity.getPose().translation
             val interactionPlaneN = -inputEvent.direction.toNormalized()
@@ -58,19 +65,23 @@ class EntityMoveInteractionHandler(
                 initialHitPoint = hitPoint,
                 initialHitDistance = (hitPoint - inputEvent.origin).length,
                 initialHitOffsetFromObjOrigin = hitPoint - interactionPlaneP,
-                timeStartNs = System.nanoTime())
+                timeStartNs = System.nanoTime(),
+                pointerType = inputEvent.pointerType)
 
         } else if (inputEvent.action == InputEvent.ACTION_UP) {
             val ci = this.currentInteraction
-            if (ci == null || !ci.performedMove) {
+            if (ci == null || !ci.performedMove || ci.pointerType != inputEvent.pointerType) {
                 // bubble the event as a tap if it wasn't handled
                 this.onInputEventBubble?.onInputEvent(inputEvent)
             }
-            this.currentInteraction = null
+
+            if (ci != null && ci.pointerType == inputEvent.pointerType) {
+                this.currentInteraction = null
+            }
 
         } else if (inputEvent.action == InputEvent.ACTION_MOVE) {
             val ci = this.currentInteraction
-            if (ci == null) {
+            if (ci == null || ci.pointerType != inputEvent.pointerType) {
                 return
             }
 
