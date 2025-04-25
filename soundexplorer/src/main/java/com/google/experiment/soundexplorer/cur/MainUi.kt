@@ -1,7 +1,6 @@
 package com.google.experiment.soundexplorer.cur
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -44,8 +43,10 @@ import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.draw.clip
 import com.google.experiment.soundexplorer.R
+import com.google.experiment.soundexplorer.ui.theme.LocalSpacing
 
 
 // Main Composable for the Shape App UI
@@ -188,11 +189,11 @@ fun ShapeOptions(
     modifier: Modifier = Modifier
 ) {
     Row(
-        horizontalArrangement = Arrangement.SpaceEvenly,
+        horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = LocalSpacing.current.s)
     ) {
         shapes.forEachIndexed { index, shapeRes ->
             ShapeButton(

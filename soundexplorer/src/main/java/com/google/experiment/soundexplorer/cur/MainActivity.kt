@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -38,6 +39,7 @@ import androidx.xr.scenecore.PanelEntity
 import androidx.xr.scenecore.Session
 import com.google.experiment.soundexplorer.core.GlbModel
 import com.google.experiment.soundexplorer.core.GlbModelRepository
+import com.google.experiment.soundexplorer.di.UiPose
 import com.google.experiment.soundexplorer.sound.SoundComposition
 import com.google.experiment.soundexplorer.ui.SoundObjectComponent
 import dagger.hilt.android.AndroidEntryPoint
@@ -54,12 +56,14 @@ class MainActivity : ComponentActivity() {
     lateinit var modelRepository : GlbModelRepository
     @Inject
     lateinit var sceneCoreSession : Session
+    @Inject
+    @UiPose
+    lateinit var uiPose : Pose
     private val viewModel : MainViewModel by viewModels()
     private var soundComponents: Array<SoundComposition.SoundCompositionComponent>? = null
     private var soundObjects: Array<SoundObjectComponent>? = null
     private var userDialogForward: Pose by mutableStateOf(Pose(Vector3(0.0f, 1.0f, -1.0f)))
-//    private var userForward: Pose by mutableStateOf(Pose(Vector3(0.0f, -0.8f, -1.5f))) // for emulator
-    private var userForward: Pose by mutableStateOf(Pose(Vector3(0.0f, -0.1f, -2.5f)))// for device
+    private lateinit var userForward: MutableState<Pose>
     private var playOnResume: Boolean = false
     private var soundObjectsReady: Boolean by mutableStateOf(false)
 
@@ -120,6 +124,7 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("RestrictedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        userForward = mutableStateOf(uiPose)
         sceneCoreSession.mainPanelEntity.setHidden(true)
         viewModel.initializeSoundComposition(sceneCoreSession)
 
@@ -226,10 +231,10 @@ class MainActivity : ComponentActivity() {
         val headLockedPanel = createPanelUi(
             session = sceneCoreSession,
             view = headLockedPanelView,
-            surfaceDimensionsPx = Dimensions(2000f, 450f),
+            surfaceDimensionsPx = Dimensions(1800f, 450f),
             dimensions = Dimensions(2f, 7f),
             panelName = "headLockedPanel",
-            pose = userForward
+            pose = userForward.value
         )
         headLockedPanelView.postOnAnimation {
             updateHeadLockedPose(headLockedPanelView, headLockedPanel)
@@ -238,7 +243,7 @@ class MainActivity : ComponentActivity() {
 
     private fun updateHeadLockedPose(view: View, panelEntity: PanelEntity) {
         sceneCoreSession.spatialUser.head?.let { projectionSource ->
-            projectionSource.transformPoseTo(userForward, sceneCoreSession.activitySpace).let {
+            projectionSource.transformPoseTo(userForward.value, sceneCoreSession.activitySpace).let {
                 panelEntity.setPose(it)
                 viewModel.setToolbarPose(it)
             }
@@ -253,7 +258,7 @@ class MainActivity : ComponentActivity() {
         val headLockedDialogPanel = createPanelUi(
             session = sceneCoreSession,
             view = headLockedDialogPanelView,
-            surfaceDimensionsPx = Dimensions(800f, 430f),
+            surfaceDimensionsPx = Dimensions(800f, 450f),
             dimensions = Dimensions(10f, 10f),
             panelName = "headLockedDialogPanel",
             pose = userDialogForward
