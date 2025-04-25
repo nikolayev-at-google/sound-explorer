@@ -34,11 +34,6 @@ class SimpleSimulationComponent (
     private var lastUpdateTimeNs: Long = -1
     private var simulationCr: Job? = null
 
-    // must be called on same thread that executes simulationLoop
-    fun setUpdateFunction(updateFn: (entity: Entity, deltaTime: Double) -> Unit) {
-        this.updateFn = updateFn
-    }
-
     override fun onAttach(entity: Entity): Boolean {
         this.entity = entity
         this.enabled.set(true)
