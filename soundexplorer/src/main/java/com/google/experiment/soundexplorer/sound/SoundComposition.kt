@@ -188,41 +188,35 @@ class SoundComposition (
 
         // Start playing all sounds at the same time.
         for (compositionComponent in compositionComponents) {
-            val entity = compositionComponent.entity
-
-            if (entity == null) {
+            if (compositionComponent.entity == null) {
                 throw IllegalStateException("Tried to initialize sound on a component that was not attached to an entity.")
             }
 
-            val lowVolume = if (this._state.value == State.PLAYING && compositionComponent.isPlaying &&
-                compositionComponent.soundType == SoundSampleType.LOW) 1.0f else 0.0f
-            compositionComponent.lowSoundStreamId = checkNotNull(soundPoolManager.playSound(
-                session,
-                entity,
-                compositionComponent.lowSoundId,
-                volume = lowVolume,
-                loop = true))
-
-            val mediumVolume = if (this._state.value == State.PLAYING && compositionComponent.isPlaying &&
-                compositionComponent.soundType == SoundSampleType.MEDIUM) 1.0f else 0.0f
-            compositionComponent.mediumSoundStreamId = checkNotNull(soundPoolManager.playSound(
-                session,
-                entity,
-                compositionComponent.mediumSoundId,
-                volume = mediumVolume,
-                loop = true))
-
-            val highVolume = if (this._state.value == State.PLAYING && compositionComponent.isPlaying &&
-                compositionComponent.soundType == SoundSampleType.HIGH) 1.0f else 0.0f
-            compositionComponent.highSoundStreamId = checkNotNull(soundPoolManager.playSound(
-                session,
-                entity,
-                compositionComponent.highSoundId,
-                volume = highVolume,
-                loop = true))
+            compositionComponent.lowSoundStreamId = getCompositionSoundStreamId(compositionComponent,
+                SoundSampleType.LOW)
+            compositionComponent.mediumSoundStreamId = getCompositionSoundStreamId(compositionComponent,
+                SoundSampleType.MEDIUM)
+            compositionComponent.highSoundStreamId = getCompositionSoundStreamId(compositionComponent,
+                SoundSampleType.HIGH)
         }
 
         this.soundsInitialized = true
+    }
+
+    private fun getCompositionSoundStreamId(compositionComponent: SoundCompositionComponent, soundSampleType: SoundSampleType): Int {
+        val soundId = when (soundSampleType) {
+            SoundSampleType.LOW -> compositionComponent.lowSoundId
+            SoundSampleType.MEDIUM -> compositionComponent.mediumSoundId
+            SoundSampleType.HIGH -> compositionComponent.highSoundId
+        }
+        val volume = if (this._state.value == State.PLAYING && compositionComponent.isPlaying &&
+            compositionComponent.soundType == soundSampleType) 1.0f else 0.0f
+        return checkNotNull(soundPoolManager.playSound(
+            session,
+            compositionComponent.entity!!,
+            soundId,
+            volume = volume,
+            loop = true))
     }
 
     fun play(): Boolean {
