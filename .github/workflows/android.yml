@@ -31,4 +31,4 @@ jobs:
       with:
           name: Sound_Explorer_APK
           path: "soundexplorer/build/outputs/apk/debug/soundexplorer-debug.apk"
-          retention-days: 3
+          retention-days: 1
