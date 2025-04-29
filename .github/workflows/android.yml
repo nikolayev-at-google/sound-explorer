@@ -25,10 +25,10 @@ jobs:
     - name: Build with Gradle
       run: ./gradlew assembleDebug --stacktrace -Dorg.gradle.jvmargs=-Xmx4g
     - name: Output path
-      run: echo "apk-path=app/build/outputs/apk/debug/app-debug.apk" >> $GITHUB_OUTPUT
+      run: echo "apk-path=soundexplorer/build/outputs/apk/debug/soundexplorer-debug.apk" >> $GITHUB_OUTPUT
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
           name: Sound_Explorer_APK
-          path: "app/build/outputs/apk/debug/app-debug.apk"
+          path: "soundexplorer/build/outputs/apk/debug/soundexplorer-debug.apk"
           retention-days: 3
