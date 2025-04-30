@@ -1,40 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- region Dangerous Permissions -->
-
-    <!-- deprecated -->
-    <uses-permission android:name="android.permission.SCENE_UNDERSTANDING" />
-
-    <!--
-        Use cases requiring this permission
-            - Tracking hand joint poses and angular and linear velocities; Using a mesh representation of the user's hands
-        Jetpack XR SDK features that require this permission:
-            - Hand state and joint poses
-     -->
-    <uses-permission android:name="android.permission.HAND_TRACKING" />
-
-    <!--
-        Use cases requiring this permission:
-            - Light estimation; projecting passthrough onto mesh surfaces; performing raycasts against
-              trackables in the environment; plane tracking; object tracking; persistent anchors.
-        Jetpack XR SDK features that require this permission:
-             - Plane tracking
-             - Hit testing
-             - Anchor persistence
-    -->
-    <uses-permission android:name="android.permission.SCENE_UNDERSTANDING_COARSE" />
-
-    <!--
-        Use cases requiring this permission:
-            - Depth texture
-        Jetpack XR SDK features that require this permission:
-            n/a
-    -->
-    <uses-permission android:name="android.permission.SCENE_UNDERSTANDING_FINE" />
-
-    <!-- endregion -->
-
     <application
         android:name=".app.SoundExplorerApp"
         android:icon="@mipmap/ic_launcher"

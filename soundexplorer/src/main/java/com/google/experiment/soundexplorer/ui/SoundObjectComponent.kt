@@ -186,7 +186,7 @@ class SoundObjectComponent(
             SoundEntityMovementHandler(
                 e,
                 soundComponent,
-                heightToChangeSound = 0.2f,
+                heightToChangeSound = 0.15f,
                 debounceThreshold = 0.05f)))
 
         gltfModelEntity.addComponent(InteractableComponent.create(session, mainExecutor,

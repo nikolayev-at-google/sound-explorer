@@ -15,8 +15,8 @@ android {
         minSdk = 34
         //noinspection OldTargetApi
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.0.2"
+        versionCode = 3
+        versionName = "0.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -76,10 +76,13 @@ dependencies {
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.androidx.junit)
+    testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.espresso.core)
     testImplementation(libs.mockito.core)
-//    testImplementation(libs.mockito.inline)
+    testImplementation(libs.mockito.inline)
     testImplementation(libs.mockito.kotlin)
+    testImplementation(libs.mockk.android)
+    testImplementation(libs.mockk.agent)
     testImplementation(libs.kotlinx.coroutines.test)
 
     // Debug

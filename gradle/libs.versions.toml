@@ -13,6 +13,8 @@ espressoCore = "3.6.1"
 mockitoCore = "5.17.0"
 mockitoKotlin = "5.4.0"
 kotlinxCoroutinesTest = "1.10.2"
+androidXTestVersion = "1.6.1"
+mockkVersion = "1.14.2"
 
 lifecycleRuntimeKtx = "2.8.7"
 lifecycleRuntimeCompose = "2.8.7"
@@ -90,6 +92,7 @@ androidx-scenecore-testing = { module = "androidx.xr.scenecore:scenecore-testing
 androidx-compose-testing = { module = "androidx.xr.compose:compose-testing", version.ref = "composeTesting" }
 androidx-runtime-testing = { module = "androidx.xr.runtime:runtime-testing", version.ref = "runtimeTesting" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidXTestVersion" }
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -97,7 +100,8 @@ mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockitoCore" }
 mockito-inline = { module = "org.mockito:mockito-inline", version.ref = "mockitoCore" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
-
+mockk-agent = { module = "io.mockk:mockk-agent", version.ref = "mockkVersion" }
+mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockkVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

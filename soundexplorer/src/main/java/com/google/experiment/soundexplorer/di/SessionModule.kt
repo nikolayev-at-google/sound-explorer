@@ -27,9 +27,9 @@ object SessionModule {
     @ActivityScoped
     @UiPose
     fun provideUiPose(): Pose = if (isEmulator())
-            Pose(Vector3(0.0f, -1.0f, -1.5f))
+            Pose(Vector3(0.0f, -1.0f, -1.0f))
         else
-            Pose(Vector3(0.0f, -0.1f, -2.5f))
+            Pose(Vector3(0.0f, -0.1f, -2.0f))
 
     @SuppressLint("DefaultLocale")
     private fun isEmulator(): Boolean {

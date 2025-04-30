@@ -244,7 +244,7 @@ class MainActivity : ComponentActivity() {
     private fun updateHeadLockedPose(view: View, panelEntity: PanelEntity) {
         sceneCoreSession.spatialUser.head?.let { projectionSource ->
             projectionSource.transformPoseTo(userForward.value, sceneCoreSession.activitySpace).let {
-                panelEntity.setPose(it)
+                panelEntity.setPose(it.rotate(Quaternion.fromEulerAngles(-20f,0f,0f)))
                 viewModel.setToolbarPose(it)
             }
         }
