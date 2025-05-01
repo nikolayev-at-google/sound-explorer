@@ -22,7 +22,8 @@ class SoundEntityMovementHandler(
     private val mediumHighHeightThreshold = initialHeight + heightToChangeSound
 
     override fun onInputEvent(inputEvent: InputEvent) {
-        if (inputEvent.action != InputEvent.ACTION_MOVE) {
+        // Todo - add back the ability to change the sound that is playing when the object is moved.
+        /* if (inputEvent.action != InputEvent.ACTION_MOVE) {
             return
         }
 
@@ -50,6 +51,6 @@ class SoundEntityMovementHandler(
                     this.soundComponent.soundType = SoundComposition.SoundSampleType.MEDIUM
                 }
             }
-        }
+        } */
     }
 }
