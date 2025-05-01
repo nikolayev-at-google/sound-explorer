@@ -192,12 +192,12 @@ class SoundComposition (
                 throw IllegalStateException("Tried to initialize sound on a component that was not attached to an entity.")
             }
 
-            compositionComponent.lowSoundStreamId = getCompositionSoundStreamId(compositionComponent,
-                SoundSampleType.LOW)
+            // compositionComponent.lowSoundStreamId = getCompositionSoundStreamId(compositionComponent,
+            //     SoundSampleType.LOW)
             compositionComponent.mediumSoundStreamId = getCompositionSoundStreamId(compositionComponent,
                 SoundSampleType.MEDIUM)
-            compositionComponent.highSoundStreamId = getCompositionSoundStreamId(compositionComponent,
-                SoundSampleType.HIGH)
+            // compositionComponent.highSoundStreamId = getCompositionSoundStreamId(compositionComponent,
+            //     SoundSampleType.HIGH)
         }
 
         this.soundsInitialized = true
