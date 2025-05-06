@@ -6,7 +6,7 @@ import androidx.xr.runtime.math.Pose
 import androidx.xr.scenecore.Session
 import com.google.experiment.soundexplorer.R
 import com.google.experiment.soundexplorer.sound.SoundComposition
-import com.google.experiment.soundexplorer.sound.SoundExplorerSoundPool
+import com.google.experiment.soundexplorer.sound.SoundManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,9 +24,9 @@ class MainViewModel @Inject constructor(
     private val _toolbarPose = MutableStateFlow(Pose())
     val toolbarPose = _toolbarPose.asStateFlow()
 
-    private var _soundPool: SoundExplorerSoundPool? = null
-    val soundPool: SoundExplorerSoundPool
-        get() { return checkNotNull(_soundPool) }
+    private var _soundManager: SoundManager? = null
+    val soundManager: SoundManager
+        get() { return checkNotNull(_soundManager) }
 
     private var _soundComposition: SoundComposition? = null
     val soundComposition: SoundComposition
@@ -94,8 +94,8 @@ class MainViewModel @Inject constructor(
             return
         }
 
-        this._soundPool = SoundExplorerSoundPool(session.activity)
-        this._soundComposition = SoundComposition(this.soundPool.manager, session)
+        this._soundManager = SoundManager()
+        this._soundComposition = SoundComposition(this.soundManager, session)
 
         this._soundComponentsInitialized.value = true
     }
@@ -106,5 +106,10 @@ class MainViewModel @Inject constructor(
 
     fun deleteAll() {
         _deleteAll.value = DeleteAll(true)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        this._soundManager?.close()
     }
 }
