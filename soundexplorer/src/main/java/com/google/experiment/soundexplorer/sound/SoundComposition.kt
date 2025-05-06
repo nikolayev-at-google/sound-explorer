@@ -1,14 +1,17 @@
 package com.google.experiment.soundexplorer.sound
 
+import android.content.Context
+import android.util.Log
 import androidx.xr.scenecore.Component
 import androidx.xr.scenecore.Entity
 import androidx.xr.scenecore.Session
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.io.InputStream
 
 class SoundComposition (
-    val soundPoolManager: SoundPoolManager,
+    val soundManager: SoundManager,
     val session: Session) {
 
     enum class State {
@@ -33,13 +36,14 @@ class SoundComposition (
     }
 
     inner class SoundCompositionComponent (
+        val soundManager: SoundManager,
         val composition: SoundComposition,
         val lowSoundId: Int,
         val mediumSoundId: Int,
         val highSoundId: Int,
         defaultSoundType: SoundSampleType = SoundSampleType.MEDIUM
     ) : Component {
-        var onPropertyChanged: (() -> Unit)? = null // thread safety?
+        var onPropertyChanged: (() -> Unit)? = null
 
         val activeSoundStreamId: Int
             get() = when (this.soundType) {
@@ -68,9 +72,9 @@ class SoundComposition (
                     }
 
                     this.composition.replaceSound(this, when (value) {
-                        SoundSampleType.LOW -> lowSoundId
-                        SoundSampleType.MEDIUM -> mediumSoundId
-                        SoundSampleType.HIGH -> highSoundId
+                        SoundSampleType.LOW -> lowSoundStreamId
+                        SoundSampleType.MEDIUM -> mediumSoundStreamId
+                        SoundSampleType.HIGH -> highSoundStreamId
                     })
 
                     field = value
@@ -93,6 +97,25 @@ class SoundComposition (
             this.composition.stopSound(this)
         }
 
+        fun loadSounds(context: Context, session: Session) {
+            val loadSound: (Int) -> Int = {
+                soundResourceId: Int ->
+                var inputStream: InputStream? = null
+                var soundIndex = -1
+                try {
+                    inputStream = context.resources.openRawResource(soundResourceId)
+                    soundIndex = checkNotNull(soundManager.loadSound(inputStream, session, checkNotNull(this.entity)))
+                } finally {
+                    inputStream?.close()
+                }
+                soundIndex
+            }
+
+            this.lowSoundStreamId = loadSound(this.lowSoundId)
+            this.mediumSoundStreamId = loadSound(this.mediumSoundId)
+            this.highSoundStreamId = loadSound(this.highSoundId)
+        }
+
         override fun onAttach(entity: Entity): Boolean {
             this.entity = entity
             this.composition.attachComponent(this)
@@ -113,7 +136,7 @@ class SoundComposition (
             initializeSounds() // ensure sounds are initialized
             component.isPlaying = true
             if (this._state.value == State.PLAYING) {
-                this.soundPoolManager.setVolume(component.activeSoundStreamId, 1.0f)
+                this.soundManager.setVolume(component.activeSoundStreamId, 1.0f)
             }
         }
     }
@@ -122,34 +145,26 @@ class SoundComposition (
         synchronized(this) {
             initializeSounds() // ensure sounds are initialized
             component.isPlaying = false
-            this.soundPoolManager.setVolume(component.activeSoundStreamId, 0.0f)
+            this.soundManager.setVolume(component.activeSoundStreamId, 0.0f)
         }
     }
 
     private fun replaceSound(component: SoundCompositionComponent, newSoundStreamId: Int?) {
         synchronized(this) {
             initializeSounds() // ensure sounds are initialized
-            this.soundPoolManager.setVolume(component.activeSoundStreamId, 0.0f)
+            this.soundManager.setVolume(component.activeSoundStreamId, 0.0f)
             if (newSoundStreamId != null && this._state.value == State.PLAYING) {
-                this.soundPoolManager.setVolume(newSoundStreamId, if (component.isPlaying) 1.0f else 0.0f)
+                this.soundManager.setVolume(newSoundStreamId, if (component.isPlaying) 1.0f else 0.0f)
             }
         }
     }
 
     private fun attachComponent(component: SoundCompositionComponent) {
-        var transitionedToReady = false
-
         synchronized(this) {
             this.unattachedComponents.remove(component)
             if (this.unattachedComponents.isEmpty() && this._state.value == State.LOADING) {
                 this._state.value = State.READY
-                transitionedToReady = true
             }
-        }
-
-        if (transitionedToReady) {
-            // by default, we want to have the composition play
-            this.play()
         }
     }
 
@@ -172,7 +187,7 @@ class SoundComposition (
             this._state.value = State.LOADING
 
             val component = SoundCompositionComponent(
-                this, lowSoundId, mediumSoundId, highSoundId, defaultSoundType)
+                this.soundManager, this, lowSoundId, mediumSoundId, highSoundId, defaultSoundType)
 
             this.unattachedComponents.add(component)
             this.compositionComponents.add(component)
@@ -186,37 +201,31 @@ class SoundComposition (
             return
         }
 
-        // Start playing all sounds at the same time.
-        for (compositionComponent in compositionComponents) {
-            if (compositionComponent.entity == null) {
-                throw IllegalStateException("Tried to initialize sound on a component that was not attached to an entity.")
-            }
+        val startTimeToPlaySounds = System.nanoTime()
 
-            // compositionComponent.lowSoundStreamId = getCompositionSoundStreamId(compositionComponent,
-            //     SoundSampleType.LOW)
-            compositionComponent.mediumSoundStreamId = getCompositionSoundStreamId(compositionComponent,
-                SoundSampleType.MEDIUM)
-            // compositionComponent.highSoundStreamId = getCompositionSoundStreamId(compositionComponent,
-            //     SoundSampleType.HIGH)
+        // Start playing all sounds at the same time.
+        soundManager.playAllSounds()
+
+        // Log the time spent on calls to play sounds. Sounds are intended to start playback at
+        // precisely the same time and any delay will negatively impact how well they align.
+        val timeToPlaySounds = (System.nanoTime() - startTimeToPlaySounds) * 0.000000001
+        Log.d("SOUNDEXP", "Time to play sounds - $timeToPlaySounds seconds.")
+
+        for (compositionComponent in compositionComponents) {
+            val componentSoundPlaying = this._state.value == State.PLAYING && compositionComponent.isPlaying
+
+            soundManager.setVolume(checkNotNull(compositionComponent.lowSoundStreamId),
+                if (componentSoundPlaying && compositionComponent.soundType == SoundSampleType.LOW)
+                    1.0f else 0.0f)
+            soundManager.setVolume(checkNotNull(compositionComponent.mediumSoundStreamId),
+                if (componentSoundPlaying && compositionComponent.soundType == SoundSampleType.MEDIUM)
+                    1.0f else 0.0f)
+            soundManager.setVolume(checkNotNull(compositionComponent.highSoundStreamId),
+                if (componentSoundPlaying && compositionComponent.soundType == SoundSampleType.HIGH)
+                    1.0f else 0.0f)
         }
 
         this.soundsInitialized = true
-    }
-
-    private fun getCompositionSoundStreamId(compositionComponent: SoundCompositionComponent, soundSampleType: SoundSampleType): Int {
-        val soundId = when (soundSampleType) {
-            SoundSampleType.LOW -> compositionComponent.lowSoundId
-            SoundSampleType.MEDIUM -> compositionComponent.mediumSoundId
-            SoundSampleType.HIGH -> compositionComponent.highSoundId
-        }
-        val volume = if (this._state.value == State.PLAYING && compositionComponent.isPlaying &&
-            compositionComponent.soundType == soundSampleType) 1.0f else 0.0f
-        return checkNotNull(soundPoolManager.playSound(
-            session,
-            compositionComponent.entity!!,
-            soundId,
-            volume = volume,
-            loop = true))
     }
 
     fun play(): Boolean {
@@ -233,7 +242,7 @@ class SoundComposition (
             }
 
             for (compositionComponent in compositionComponents) {
-                this.soundPoolManager.setVolume(
+                this.soundManager.setVolume(
                     compositionComponent.activeSoundStreamId,
                     if (compositionComponent.isPlaying) 1.0f else 0.0f
                 )
@@ -252,7 +261,7 @@ class SoundComposition (
             this._state.value = State.STOPPED
 
             for (compositionComponent in this.compositionComponents) {
-                this.soundPoolManager.setVolume(compositionComponent.activeSoundStreamId, 0.0f)
+                this.soundManager.setVolume(compositionComponent.activeSoundStreamId, 0.0f)
             }
 
             return true

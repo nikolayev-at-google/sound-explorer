@@ -37,13 +37,13 @@ import androidx.xr.runtime.math.Vector3
 import androidx.xr.scenecore.Dimensions
 import androidx.xr.scenecore.PanelEntity
 import androidx.xr.scenecore.Session
+import com.google.experiment.soundexplorer.R
 import com.google.experiment.soundexplorer.core.GlbModel
 import com.google.experiment.soundexplorer.core.GlbModelRepository
 import com.google.experiment.soundexplorer.di.UiPose
 import com.google.experiment.soundexplorer.sound.SoundComposition
 import com.google.experiment.soundexplorer.ui.SoundObjectComponent
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.getValue
@@ -80,43 +80,45 @@ class MainActivity : ComponentActivity() {
                 checkNotNull(soundComponents)[i],
                 mainExecutor,
                 lifecycleScope)
+
+            checkNotNull(soundComponents)[i].loadSounds(this, sceneCoreSession)
         }
         return soundObjs.map { o -> checkNotNull(o) }.toTypedArray()
     }
 
-    suspend fun initializeSoundsAndCreateObjects() {
+    fun initializeSoundsAndCreateObjects() {
         if (this.soundObjectsReady) {
             return
         }
 
-        // wait for sounds to load
-        this.viewModel.soundPool.soundsLoaded.first { x -> x }
-
         if (soundComponents == null) {
             soundComponents = arrayOf(
                 viewModel.soundComposition.addComponent(
-                    viewModel.soundPool.inst01lowId, viewModel.soundPool.inst01midId, viewModel.soundPool.inst01highId),
+                    R.raw.inst01_low, R.raw.inst01_mid, R.raw.inst01_high),
                 viewModel.soundComposition.addComponent(
-                    viewModel.soundPool.inst02lowId, viewModel.soundPool.inst02midId, viewModel.soundPool.inst02highId),
+                    R.raw.inst02_low, R.raw.inst02_mid, R.raw.inst02_high),
                 viewModel.soundComposition.addComponent(
-                    viewModel.soundPool.inst03lowId, viewModel.soundPool.inst03midId, viewModel.soundPool.inst03highId),
+                    R.raw.inst03_low, R.raw.inst03_mid, R.raw.inst03_high),
                 viewModel.soundComposition.addComponent(
-                    viewModel.soundPool.inst04lowId, viewModel.soundPool.inst04midId, viewModel.soundPool.inst04highId),
+                    R.raw.inst04_low, R.raw.inst04_mid, R.raw.inst04_high),
                 viewModel.soundComposition.addComponent(
-                    viewModel.soundPool.inst05lowId, viewModel.soundPool.inst05midId, viewModel.soundPool.inst05highId),
+                    R.raw.inst05_low, R.raw.inst05_mid, R.raw.inst05_high),
                 viewModel.soundComposition.addComponent(
-                    viewModel.soundPool.inst06lowId, viewModel.soundPool.inst06midId, viewModel.soundPool.inst06highId),
+                    R.raw.inst06_low, R.raw.inst06_mid, R.raw.inst06_high),
                 viewModel.soundComposition.addComponent(
-                    viewModel.soundPool.inst07lowId, viewModel.soundPool.inst07midId, viewModel.soundPool.inst07highId),
+                    R.raw.inst07_low, R.raw.inst07_mid, R.raw.inst07_high),
                 viewModel.soundComposition.addComponent(
-                    viewModel.soundPool.inst08lowId, viewModel.soundPool.inst08midId, viewModel.soundPool.inst08highId),
+                    R.raw.inst08_low, R.raw.inst08_mid, R.raw.inst08_high),
                 viewModel.soundComposition.addComponent(
-                    viewModel.soundPool.inst09lowId, viewModel.soundPool.inst09midId, viewModel.soundPool.inst09highId))
+                    R.raw.inst09_low, R.raw.inst09_mid, R.raw.inst09_high))
         }
 
         if (this.soundObjects == null) {
             this.soundObjects = createSoundObjects(GlbModel.allGlbAnimatedModels.toTypedArray())
         }
+
+        // play the composition by default
+        this.viewModel.soundComposition.play()
 
         this.soundObjectsReady = true
     }
@@ -128,7 +130,7 @@ class MainActivity : ComponentActivity() {
         sceneCoreSession.mainPanelEntity.setHidden(true)
         viewModel.initializeSoundComposition(sceneCoreSession)
 
-        lifecycleScope.launch { initializeSoundsAndCreateObjects() }
+        initializeSoundsAndCreateObjects()
 
         createHeadLockedPanelUi()
 
