@@ -42,6 +42,7 @@ import com.google.experiment.soundexplorer.core.GlbModel
 import com.google.experiment.soundexplorer.core.GlbModelRepository
 import com.google.experiment.soundexplorer.di.UiPose
 import com.google.experiment.soundexplorer.sound.SoundComposition
+import com.google.experiment.soundexplorer.sound.SoundCompositionComponent
 import com.google.experiment.soundexplorer.ui.SoundObjectComponent
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -60,7 +61,7 @@ class MainActivity : ComponentActivity() {
     @UiPose
     lateinit var uiPose : Pose
     private val viewModel : MainViewModel by viewModels()
-    private var soundComponents: Array<SoundComposition.SoundCompositionComponent>? = null
+    private var soundComponents: Array<SoundCompositionComponent>? = null
     private var soundObjects: Array<SoundObjectComponent>? = null
     private var userDialogForward: Pose by mutableStateOf(Pose(Vector3(0.0f, 1.0f, -1.0f)))
     private lateinit var userForward: MutableState<Pose>
@@ -80,8 +81,6 @@ class MainActivity : ComponentActivity() {
                 checkNotNull(soundComponents)[i],
                 mainExecutor,
                 lifecycleScope)
-
-            checkNotNull(soundComponents)[i].loadSounds(this, sceneCoreSession)
         }
         return soundObjs.map { o -> checkNotNull(o) }.toTypedArray()
     }
@@ -128,7 +127,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         userForward = mutableStateOf(uiPose)
         sceneCoreSession.mainPanelEntity.setHidden(true)
-        viewModel.initializeSoundComposition(sceneCoreSession)
+
+        viewModel.soundComposition = SoundComposition(viewModel.soundManager, sceneCoreSession)
 
         initializeSoundsAndCreateObjects()
 

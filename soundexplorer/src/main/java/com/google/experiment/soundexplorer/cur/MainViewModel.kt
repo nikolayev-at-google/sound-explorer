@@ -24,13 +24,8 @@ class MainViewModel @Inject constructor(
     private val _toolbarPose = MutableStateFlow(Pose())
     val toolbarPose = _toolbarPose.asStateFlow()
 
-    private var _soundManager: SoundManager? = null
-    val soundManager: SoundManager
-        get() { return checkNotNull(_soundManager) }
-
-    private var _soundComposition: SoundComposition? = null
-    val soundComposition: SoundComposition
-        get() { return checkNotNull(_soundComposition) }
+    val soundManager: SoundManager = SoundManager() // use di?
+    lateinit var soundComposition: SoundComposition // use di?
 
     class DeleteAll(val value: Boolean = false)
     private val _deleteAll = MutableStateFlow(DeleteAll())
@@ -89,17 +84,6 @@ class MainViewModel @Inject constructor(
         _isDialogHidden.value = !_isDialogHidden.value
     }
 
-    fun initializeSoundComposition(session: Session) {
-        if (this._soundComponentsInitialized.value) {
-            return
-        }
-
-        this._soundManager = SoundManager()
-        this._soundComposition = SoundComposition(this.soundManager, session)
-
-        this._soundComponentsInitialized.value = true
-    }
-
     fun setToolbarPose(pose: Pose) {
         _toolbarPose.value = pose
     }
@@ -110,6 +94,6 @@ class MainViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        this._soundManager?.close()
+        this.soundManager.close()
     }
 }
