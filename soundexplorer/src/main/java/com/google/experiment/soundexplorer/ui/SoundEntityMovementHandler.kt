@@ -4,12 +4,13 @@ import androidx.xr.scenecore.Entity
 import androidx.xr.scenecore.InputEvent
 import androidx.xr.scenecore.InputEventListener
 import com.google.experiment.soundexplorer.sound.SoundComposition
+import com.google.experiment.soundexplorer.sound.SoundCompositionComponent
 
 class SoundEntityMovementHandler(
     // entity whose position will be tracked to determine if the sound should change
     val entity: Entity,
     // sound component that is used to change the sound type
-    val soundComponent: SoundComposition.SoundCompositionComponent,
+    val soundComponent: SoundCompositionComponent,
     // difference in height relative to the initial location at which the sound changes
     heightToChangeSound: Float,
     // additional height difference to transition from higher -> lower states (to avoid jitter)

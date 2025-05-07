@@ -74,7 +74,7 @@ class SimpleSimulationComponent (
 
             lastUpdateTimeNs = currentTimeNs
 
-            delay(16) // todo - implement as a catchup or do something smarter than just sleep 16ms
+            delay(16) // todo - implement as a catchup or do something more than just sleep 16ms
         }
     }
 }

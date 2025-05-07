@@ -15,6 +15,7 @@ import androidx.xr.scenecore.Session
 import com.google.experiment.soundexplorer.core.GlbModel
 import com.google.experiment.soundexplorer.core.GlbModelRepository
 import com.google.experiment.soundexplorer.sound.SoundComposition
+import com.google.experiment.soundexplorer.sound.SoundCompositionComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executor
@@ -23,7 +24,7 @@ class SoundObjectComponent(
     val session : Session,
     val modelRepository : GlbModelRepository,
     val glbModel : GlbModel,
-    val soundComponent: SoundComposition.SoundCompositionComponent,
+    val soundComponent: SoundCompositionComponent,
     val mainExecutor: Executor,
     val coroutineScope: CoroutineScope
 ) : Component {
@@ -34,7 +35,7 @@ class SoundObjectComponent(
             parentEntity: Entity,
             modelRepository : GlbModelRepository,
             glbModel : GlbModel,
-            soundComponent: SoundComposition.SoundCompositionComponent,
+            soundComponent: SoundCompositionComponent,
             mainExecutor: Executor,
             coroutineScope: CoroutineScope
         ): SoundObjectComponent {
@@ -51,6 +52,8 @@ class SoundObjectComponent(
                 session, modelRepository, glbModel, soundComponent, mainExecutor, coroutineScope)
 
             manipulationEntity.addComponent(soc)
+
+            soundComponent.loadSounds(session)
 
             soc.hidden = true
 
@@ -93,7 +96,6 @@ class SoundObjectComponent(
     }
 
     override fun onDetach(entity: Entity) {
-        // todo - properly handle detach
         this.entity = null
     }
 
@@ -131,7 +133,11 @@ class SoundObjectComponent(
                     InputEvent.ACTION_UP -> {
                         gltfModelEntity.startAnimation(loop = false)
 
-                        if (!soundComponent.isPlaying) {
+                        if (soundComponent.composition.state.value == SoundComposition.State.STOPPED) {
+                            soundComponent.composition.stopAllSoundComponents()
+                            soundComponent.play()
+                            soundComponent.composition.play()
+                        } else if (!soundComponent.isPlaying) {
                             soundComponent.play()
                         } else {
                             soundComponent.stop()
@@ -170,7 +176,9 @@ class SoundObjectComponent(
         gltfModelEntity.addComponent(simComponent)
 
         soundComponent.onPropertyChanged = {
-            if (!soundComponent.isPlaying) {
+            if (!soundComponent.isPlaying ||
+                soundComponent.composition.state.value != SoundComposition.State.PLAYING
+            ) {
                 simComponent.paused = true
             } else {
                 simComponent.paused = false
