@@ -151,14 +151,6 @@ class SoundObjectComponent(
                 e: Entity, dT: Double ->
             e.setPose(Pose(
                 e.getPose().translation,
-                e.getPose().rotation * Quaternion.fromAxisAngle(Vector3.Up, 20.0f * dT.toFloat())
-            ))
-        }
-
-        val mediumBehavior = {
-                e: Entity, dT: Double ->
-            e.setPose(Pose(
-                e.getPose().translation,
                 e.getPose().rotation * Quaternion.fromAxisAngle(Vector3.One, 40.0f * dT.toFloat())
             ))
         }
@@ -171,7 +163,7 @@ class SoundObjectComponent(
             ))
         }
 
-        val simComponent = SimpleSimulationComponent(coroutineScope, mediumBehavior)
+        val simComponent = SimpleSimulationComponent(coroutineScope, lowBehavior)
 
         gltfModelEntity.addComponent(simComponent)
 
@@ -184,7 +176,6 @@ class SoundObjectComponent(
                 simComponent.paused = false
                 simComponent.updateFn = when (soundComponent.soundType) {
                     SoundComposition.SoundSampleType.LOW -> lowBehavior
-                    SoundComposition.SoundSampleType.MEDIUM -> mediumBehavior
                     SoundComposition.SoundSampleType.HIGH -> highBehavior
                 }
             }

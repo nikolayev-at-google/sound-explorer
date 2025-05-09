@@ -10,16 +10,14 @@ class SoundCompositionComponent (
     val soundManager: SoundManager,
     val composition: SoundComposition,
     val lowSoundId: Int,
-    val mediumSoundId: Int,
     val highSoundId: Int,
-    defaultSoundType: SoundSampleType = SoundSampleType.MEDIUM
+    defaultSoundType: SoundSampleType = SoundSampleType.LOW
 ) : Component {
     var onPropertyChanged: (() -> Unit)? = null
 
     val activeSoundStreamId: Int
         get() = when (this.soundType) {
             SoundSampleType.LOW -> checkNotNull(lowSoundStreamId)
-            SoundSampleType.MEDIUM -> checkNotNull(mediumSoundStreamId)
             SoundSampleType.HIGH -> checkNotNull(highSoundStreamId)
         }
 
@@ -44,7 +42,6 @@ class SoundCompositionComponent (
 
                 this.composition.replaceSound(this, when (value) {
                     SoundSampleType.LOW -> lowSoundStreamId
-                    SoundSampleType.MEDIUM -> mediumSoundStreamId
                     SoundSampleType.HIGH -> highSoundStreamId
                 })
 
@@ -55,7 +52,6 @@ class SoundCompositionComponent (
         }
 
     internal var lowSoundStreamId: Int? = null
-    internal var mediumSoundStreamId: Int? = null
     internal var highSoundStreamId: Int? = null
 
     internal var entity: Entity? = null
@@ -69,22 +65,10 @@ class SoundCompositionComponent (
     }
 
     fun loadSounds(session: Session) {
-        val loadSound: (Int) -> Int = {
-                soundResourceId: Int ->
-            var inputStream: InputStream? = null
-            var soundIndex = -1
-            try {
-                inputStream = session.activity.resources.openRawResource(soundResourceId)
-                soundIndex = checkNotNull(soundManager.loadSound(inputStream, session, checkNotNull(this.entity)))
-            } finally {
-                inputStream?.close()
-            }
-            soundIndex
-        }
-
-        this.lowSoundStreamId = loadSound(this.lowSoundId)
-        this.mediumSoundStreamId = loadSound(this.mediumSoundId)
-        this.highSoundStreamId = loadSound(this.highSoundId)
+        this.lowSoundStreamId = checkNotNull(soundManager.loadSound(
+            session, checkNotNull(this.entity), this.lowSoundId))
+        this.highSoundStreamId = checkNotNull(soundManager.loadSound(
+            session, checkNotNull(this.entity), this.highSoundId))
     }
 
     override fun onAttach(entity: Entity): Boolean {

@@ -18,11 +18,11 @@ class SoundManager @Inject constructor() : Closeable {
 
     private var audioTracks: MutableList<AudioTrack> = mutableListOf()
 
-    fun loadSound(inputStream: InputStream, session: Session, entity: Entity): Int? {
-        var audioTrackInitialized = false
-        var audioTrack: AudioTrack? = null
-
+    private fun parseWAVFile(session: Session, soundResourceId: Int): ByteArray? {
+        var inputStream: InputStream? = null
         try {
+            inputStream = session.activity.resources.openRawResource(soundResourceId)
+
             // wav file header checks
             val riffId = String(inputStream.readNBytes(4))
             if (riffId != "RIFF") throw IOException("Invalid WAV file - Missing 'RIFF'")
@@ -38,10 +38,29 @@ class SoundManager @Inject constructor() : Closeable {
                 dataId = dataId.substring(1) + nextChar
             }
 
-            val bufferSize =
-                ByteBuffer.wrap(inputStream.readNBytes(4)).order(ByteOrder.LITTLE_ENDIAN).getInt(0)
+            val bufferSize = ByteBuffer
+                .wrap(inputStream.readNBytes(4))
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .getInt(0)
 
-            val audioData = inputStream.readNBytes(bufferSize)
+            return inputStream.readNBytes(bufferSize)
+        } finally {
+            inputStream?.close()
+        }
+
+        return null
+    }
+
+    fun loadSound(session: Session, entity: Entity, soundResourceId: Int): Int? {
+        var audioTrackInitialized = false
+        var audioTrack: AudioTrack? = null
+
+        try {
+            val audioBuffer = parseWAVFile(session, soundResourceId)
+
+            if (audioBuffer == null) {
+                return null
+            }
 
             val audioAttributes = AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
@@ -57,7 +76,7 @@ class SoundManager @Inject constructor() : Closeable {
             val audioTrackBuilder = AudioTrack.Builder()
                 .setAudioAttributes(audioAttributes)
                 .setAudioFormat(audioFormatConfig)
-                .setBufferSizeInBytes(bufferSize)
+                .setBufferSizeInBytes(audioBuffer.size)
                 .setTransferMode(AudioTrack.MODE_STATIC)
 
             val pointSourceAttributes = PointSourceAttributes(entity)
@@ -70,7 +89,7 @@ class SoundManager @Inject constructor() : Closeable {
                 )
                 .build()
 
-            audioTrack.write(audioData, 0, bufferSize)
+            audioTrack.write(audioBuffer, 0, audioBuffer.size)
 
             audioTrack.setLoopPoints(0, audioTrack.bufferSizeInFrames, -1)
             audioTrack.setVolume(0.0f)
