@@ -21,7 +21,7 @@ import androidx.xr.compose.subspace.layout.SubspaceModifier
 import androidx.xr.compose.subspace.layout.height
 import androidx.xr.compose.subspace.layout.movable
 import androidx.xr.compose.subspace.layout.offset
-import androidx.xr.compose.subspace.layout.resizable
+import androidx.xr.compose.subspace.layout.rotate
 import androidx.xr.compose.subspace.layout.width
 import androidx.xr.runtime.math.Pose
 import androidx.xr.runtime.math.Quaternion
@@ -123,8 +123,9 @@ class MainActivity : ComponentActivity() {
                         modifier = SubspaceModifier
                             .width(1000.dp)
                             .height(170.dp)
+                            .offset(z = 200.dp, y = (-200).dp)
+                            .rotate(-20f,0f,0f)
                             .movable()
-                            .resizable()
                     ) {
                         ShapeAppScreen()
                     }
