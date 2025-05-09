@@ -74,26 +74,27 @@ class MainActivity : ComponentActivity() {
             return
         }
 
+        // Note that high and low sound selections are intentional. Do not change sound assignments.
         if (soundComponents == null) {
             soundComponents = arrayOf(
                 viewModel.soundComposition.addComponent(
-                    R.raw.inst01_low, R.raw.inst01_mid, R.raw.inst01_high),
+                    lowSoundId = R.raw.inst01_high, highSoundId = R.raw.inst01_low),
                 viewModel.soundComposition.addComponent(
-                    R.raw.inst02_low, R.raw.inst02_mid, R.raw.inst02_high),
+                    lowSoundId = R.raw.inst02_mid, highSoundId = R.raw.inst02_high),
                 viewModel.soundComposition.addComponent(
-                    R.raw.inst03_low, R.raw.inst03_mid, R.raw.inst03_high),
+                    lowSoundId = R.raw.inst03_high, highSoundId = R.raw.inst03_low),
                 viewModel.soundComposition.addComponent(
-                    R.raw.inst04_low, R.raw.inst04_mid, R.raw.inst04_high),
+                    lowSoundId = R.raw.inst04_low, highSoundId = R.raw.inst04_high),
                 viewModel.soundComposition.addComponent(
-                    R.raw.inst05_low, R.raw.inst05_mid, R.raw.inst05_high),
+                    lowSoundId = R.raw.inst05_high, highSoundId = R.raw.inst05_mid),
                 viewModel.soundComposition.addComponent(
-                    R.raw.inst06_low, R.raw.inst06_mid, R.raw.inst06_high),
+                    lowSoundId = R.raw.inst06_high, highSoundId = R.raw.inst06_low),
                 viewModel.soundComposition.addComponent(
-                    R.raw.inst07_low, R.raw.inst07_mid, R.raw.inst07_high),
+                    lowSoundId = R.raw.inst07_low, highSoundId = R.raw.inst07_mid),
                 viewModel.soundComposition.addComponent(
-                    R.raw.inst08_low, R.raw.inst08_mid, R.raw.inst08_high),
+                    lowSoundId = R.raw.inst08_high, highSoundId = R.raw.inst08_mid),
                 viewModel.soundComposition.addComponent(
-                    R.raw.inst09_low, R.raw.inst09_mid, R.raw.inst09_high))
+                    lowSoundId = R.raw.inst09_low, highSoundId = R.raw.inst09_high))
         }
 
         if (this.soundObjects == null) {

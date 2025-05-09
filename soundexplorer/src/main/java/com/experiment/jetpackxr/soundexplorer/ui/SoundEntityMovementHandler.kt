@@ -18,9 +18,7 @@ class SoundEntityMovementHandler(
 ) : InputEventListener {
 
     private val initialHeight = entity.getPose().translation.y
-
-    private val lowMediumHeightThreshold = initialHeight - heightToChangeSound
-    private val mediumHighHeightThreshold = initialHeight + heightToChangeSound
+    private val highHeightThreshold = initialHeight + heightToChangeSound
 
     override fun onInputEvent(inputEvent: InputEvent) {
         if (inputEvent.action != InputEvent.ACTION_MOVE) {
@@ -31,24 +29,13 @@ class SoundEntityMovementHandler(
 
         when (this.soundComponent.soundType) {
             SoundComposition.SoundSampleType.LOW -> {
-                if (currentHeight > mediumHighHeightThreshold) {
-                    this.soundComponent.soundType = SoundComposition.SoundSampleType.HIGH
-                } else if (currentHeight > lowMediumHeightThreshold) {
-                    this.soundComponent.soundType = SoundComposition.SoundSampleType.MEDIUM
-                }
-            }
-            SoundComposition.SoundSampleType.MEDIUM -> {
-                if (currentHeight < lowMediumHeightThreshold - debounceThreshold) {
-                    this.soundComponent.soundType = SoundComposition.SoundSampleType.LOW
-                } else if (currentHeight > mediumHighHeightThreshold) {
+                if (currentHeight > highHeightThreshold) {
                     this.soundComponent.soundType = SoundComposition.SoundSampleType.HIGH
                 }
             }
             SoundComposition.SoundSampleType.HIGH -> {
-                if (currentHeight < lowMediumHeightThreshold - debounceThreshold) {
+                if (currentHeight < highHeightThreshold - debounceThreshold) {
                     this.soundComponent.soundType = SoundComposition.SoundSampleType.LOW
-                } else if (currentHeight < mediumHighHeightThreshold - debounceThreshold) {
-                    this.soundComponent.soundType = SoundComposition.SoundSampleType.MEDIUM
                 }
             }
         }

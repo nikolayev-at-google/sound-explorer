@@ -27,7 +27,6 @@ class SoundComposition  @Inject constructor(
 
     enum class SoundSampleType {
         LOW,
-        MEDIUM,
         HIGH
     }
 
@@ -77,8 +76,8 @@ class SoundComposition  @Inject constructor(
         }
     }
 
-    fun addComponent(lowSoundId: Int, mediumSoundId: Int, highSoundId: Int,
-                     defaultSoundType: SoundSampleType = SoundSampleType.MEDIUM): SoundCompositionComponent {
+    fun addComponent(lowSoundId: Int, highSoundId: Int,
+                     defaultSoundType: SoundSampleType = SoundSampleType.LOW): SoundCompositionComponent {
         synchronized(this) {
             if (this.state.value >= State.PLAYING) {
                 throw IllegalStateException("Tried to add an component after play() was called.")
@@ -87,7 +86,7 @@ class SoundComposition  @Inject constructor(
             this._state.value = State.LOADING
 
             val component = SoundCompositionComponent(
-                this.soundManager, this, lowSoundId, mediumSoundId, highSoundId, defaultSoundType)
+                this.soundManager, this, lowSoundId, highSoundId, defaultSoundType)
 
             this.unattachedComponents.add(component)
             this.compositionComponents.add(component)
@@ -116,9 +115,6 @@ class SoundComposition  @Inject constructor(
 
             soundManager.setVolume(checkNotNull(compositionComponent.lowSoundStreamId),
                 if (componentSoundPlaying && compositionComponent.soundType == SoundSampleType.LOW)
-                    1.0f else 0.0f)
-            soundManager.setVolume(checkNotNull(compositionComponent.mediumSoundStreamId),
-                if (componentSoundPlaying && compositionComponent.soundType == SoundSampleType.MEDIUM)
                     1.0f else 0.0f)
             soundManager.setVolume(checkNotNull(compositionComponent.highSoundStreamId),
                 if (componentSoundPlaying && compositionComponent.soundType == SoundSampleType.HIGH)
