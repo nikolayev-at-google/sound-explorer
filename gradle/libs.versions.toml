@@ -33,6 +33,7 @@ media3Exoplayer = "1.6.1"
 concurrentFuturesKtx = "1.2.0"
 kotlinxCoroutinesGuava = "1.10.2"
 
+robolectric = "4.14.1"
 xr-compose          = "1.0.0-alpha03"
 xr-runtimeVersion   = "1.0.0-alpha03"
 xr-scenecore        = "1.0.0-alpha03"
@@ -103,6 +104,8 @@ mockito-inline = { module = "org.mockito:mockito-inline", version.ref = "mockito
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 mockk-agent = { module = "io.mockk:mockk-agent", version.ref = "mockkVersion" }
 mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockkVersion" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+truth = { module = "com.google.truth:truth", version = "1.0.1" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
