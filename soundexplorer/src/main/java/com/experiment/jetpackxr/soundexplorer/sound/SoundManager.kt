@@ -48,6 +48,7 @@ class SoundManager @Inject constructor() : Closeable {
             inputStream?.close()
         }
 
+        return null
     }
 
     fun loadSound(session: Session, entity: Entity, soundResourceId: Int): Int? {
