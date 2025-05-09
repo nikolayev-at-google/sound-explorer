@@ -7,16 +7,15 @@ plugins {
 }
 
 android {
-    namespace = "com.google.experiment.soundexplorer"
+    namespace = "com.experiment.jetpackxr.soundexplorer"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.google.experiment.soundexplorer"
+        applicationId = "com.experiment.jetpackxr.soundexplorer"
         minSdk = 34
-        //noinspection OldTargetApi
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.0.3"
+        versionCode = 4
+        versionName = "0.0.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -54,8 +53,6 @@ dependencies {
 
     // XR
     implementation(libs.androidx.xr.compose)
-    implementation(libs.androidx.xr.runtime)
-    implementation(libs.androidx.xr.scenecore)
     implementation(libs.androidx.xr.arcore)
     implementation(libs.androidx.xr.material3)
 
