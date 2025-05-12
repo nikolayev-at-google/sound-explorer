@@ -21,7 +21,8 @@ This experiment demonstrates:
 - Loading and manipulating GLTF models as entities in a scene graph
 - Scene graph manipulation using the JetPack SceneCore library
 - Custom interactions with 3d objects
-- 2d UI elements built using JetPack Compose
+- 2D UI elements built using Jetpack Compose
+- 3D UI elements built with using Jetpack Compose for XR.
 
 ## Spatial Audio
 
@@ -46,6 +47,12 @@ object. Another is manipulated by the user when they drag objects around the sce
 A simple acceleration based movement interaction handler is implemented to enable users to move 3d 
 objects around the scene. Some custom logic is implemented to arbitrate between tapping on an 
 object to start/stop playback and tap-dragging on an object to change its sound/location.
+
+## Jetpack Compose for XR
+
+Application creates subspace, within app where UI and 3D models placed. SpatialPanel used to create 
+application menu, where user can select 3D shape to place it on scene or revert it. Selected 3D shape
+placed in front of user FOV, based on user head position.
 
 # 💻 Development Environment
 

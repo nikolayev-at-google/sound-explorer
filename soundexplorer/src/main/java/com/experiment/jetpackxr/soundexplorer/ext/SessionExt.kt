@@ -7,12 +7,10 @@ import androidx.xr.runtime.Session
 
 
 suspend fun Session.loadGltfModel(assetName: String): Model? {
-
     val loadedGltfModel = try {
         GltfModel.create(this, assetName).await()
     } catch (e: Exception) {
         return null
     }
-
     return loadedGltfModel
 }

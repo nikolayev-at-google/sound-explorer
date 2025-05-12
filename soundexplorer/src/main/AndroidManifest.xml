@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- used to track user head and place 3D objects in front of user -->
+    <uses-permission android:name="android.permission.HEAD_TRACKING" />
+
     <application
         android:name=".app.SoundExplorerApp"
         android:icon="@mipmap/ic_launcher"

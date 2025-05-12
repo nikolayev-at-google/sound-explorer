@@ -35,7 +35,6 @@ import com.experiment.jetpackxr.soundexplorer.core.GlbModelRepository
 import com.experiment.jetpackxr.soundexplorer.ui.SoundObjectComponent
 import com.experiment.jetpackxr.soundexplorer.ui.theme.LocalSpacing
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -129,7 +128,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         session.scene.mainPanelEntity.setHidden(true)
-        session.resume()
         session.configure(Config(headTracking = Config.HeadTrackingMode.Enabled))
 
         lifecycleScope.launch { initializeSoundsAndCreateObjects() }

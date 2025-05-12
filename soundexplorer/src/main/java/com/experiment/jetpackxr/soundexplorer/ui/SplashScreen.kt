@@ -76,7 +76,7 @@ fun SplashScreen(
             )
         }
 
-        //Delay animation until first frame is rendered
+        // Delay animation until first frame is rendered
         LaunchedEffect(Unit) {
             withFrameNanos {}
             shouldStartAnimation = true
