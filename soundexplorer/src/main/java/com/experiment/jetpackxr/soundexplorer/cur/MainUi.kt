@@ -59,8 +59,7 @@ import com.experiment.jetpackxr.soundexplorer.ui.theme.LocalSpacing
 /** Main Composable for the Shape App UI */
 @Composable
 fun ShapeAppScreen(
-    mainViewModel: MainViewModel = viewModel(),
-    contentLoaded: Boolean
+    mainViewModel: MainViewModel = viewModel()
 ) {
     Box(
         modifier = Modifier.fillMaxWidth()
@@ -70,8 +69,7 @@ fun ShapeAppScreen(
 
         SplashScreen(
             onFadeOut = { startFadeIn = true },
-            onFinished = {  },
-            contentLoaded
+            onFinished = {  }
         )
 
         LaunchedEffect(startFadeIn) {
@@ -145,6 +143,20 @@ fun MainNavigationPanel(
 
             // Play/Pause button
             when (viewModel.soundComposition.state.collectAsState().value) {
+                SoundComposition.State.LOADING -> {
+                    IconButton(
+                        onClick = {},
+                        enabled = hasSpawnedShapes,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_play),
+                            contentDescription = "Loading",
+                            tint = Color.White.copy(alpha = 0.5f),
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+                }
                 SoundComposition.State.READY -> {
                     IconButton(
                         onClick = { viewModel.soundComposition.play() },
@@ -319,7 +331,7 @@ fun ShapeButton(
 @Preview
 @Composable
 fun ShapeAppScreenPreview() {
-    ShapeAppScreen(contentLoaded = true)
+    ShapeAppScreen()
 }
 
 @Composable
