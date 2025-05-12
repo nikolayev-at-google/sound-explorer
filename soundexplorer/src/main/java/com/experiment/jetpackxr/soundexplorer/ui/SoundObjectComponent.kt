@@ -12,48 +12,43 @@ import androidx.xr.scenecore.InputEvent
 import androidx.xr.scenecore.InputEventListener
 import androidx.xr.scenecore.InteractableComponent
 import androidx.xr.runtime.Session
+import androidx.xr.scenecore.scene
 import com.experiment.jetpackxr.soundexplorer.core.GlbModel
 import com.experiment.jetpackxr.soundexplorer.core.GlbModelRepository
 import com.experiment.jetpackxr.soundexplorer.sound.SoundComposition
-import com.experiment.jetpackxr.soundexplorer.sound.SoundCompositionComponent
+import com.experiment.jetpackxr.soundexplorer.sound.SoundComposition.SoundSampleType
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import java.util.concurrent.Executor
 
 class SoundObjectComponent(
     val session : Session,
     val modelRepository : GlbModelRepository,
     val glbModel : GlbModel,
-    val soundComponent: SoundCompositionComponent,
-    val mainExecutor: Executor,
-    val coroutineScope: CoroutineScope
+    val composition: SoundComposition,
+    val coroutineScope: CoroutineScope,
+    defaultSoundType: SoundSampleType = SoundSampleType.LOW
 ) : Component {
 
     companion object {
         fun createSoundObject(
             session : Session,
-            parentEntity: Entity,
             modelRepository : GlbModelRepository,
             glbModel : GlbModel,
-            soundComponent: SoundCompositionComponent,
-            mainExecutor: Executor,
-            coroutineScope: CoroutineScope
+            composition: SoundComposition,
+            coroutineScope: CoroutineScope,
+            defaultSoundType: SoundSampleType = SoundSampleType.LOW
         ): SoundObjectComponent {
-            // Create contentless wrapper entities for the sound object
-            // We need to defer loading the gltf model as it takes too long to load to do it at app launch.
+            // Create contentless wrapper entities for the sound object.
+            // Entities must be created before spatial audio tracks are initialized. So, we defer
+            // object initialization to initializeModelAndBehaviors().
 
             val manipulationEntity = ContentlessEntity.create(session, "ObjectManipEntity", Pose.Identity)
 
-            manipulationEntity.setParent(parentEntity)
-
-            manipulationEntity.addComponent(soundComponent)
+            manipulationEntity.setParent(session.scene.activitySpace)
 
             val soc = SoundObjectComponent(
-                session, modelRepository, glbModel, soundComponent, mainExecutor, coroutineScope)
+                session, modelRepository, glbModel, composition, coroutineScope, defaultSoundType)
 
             manipulationEntity.addComponent(soc)
-
-            soundComponent.loadSounds(session)
 
             soc.hidden = true
 
@@ -61,12 +56,26 @@ class SoundObjectComponent(
         }
     }
 
+    var onPropertyChanged: (() -> Unit)? = null
+
+    var lowSoundId: Int? = null
+    var highSoundId: Int? = null
+
     private var isInitialized = false
-    private var entity: Entity? = null
+    private var _entity: Entity? = null
+
+    val entity: Entity get() {
+        val e = this._entity
+        if (e == null) {
+            throw IllegalStateException("Tried to get hidden state on sound object when entity was detached!")
+        }
+
+        return e
+    }
 
     var hidden : Boolean
         get() {
-            val e = this.entity
+            val e = this._entity
             if (e == null) {
                 throw IllegalStateException("Tried to get hidden state on sound object when entity was detached!")
             }
@@ -74,7 +83,7 @@ class SoundObjectComponent(
             return e.isHidden(false)
         }
         set(value) {
-            val e = this.entity
+            val e = this._entity
             if (e == null) {
                 throw IllegalStateException("Tried to set hidden state on sound object when entity was detached!")
             }
@@ -84,23 +93,63 @@ class SoundObjectComponent(
             }
 
             e.setHidden(value)
+        }
 
-            if (!value) {
-                coroutineScope.launch { initialize() }
+    val activeSoundStreamId: Int
+        get() = when (this.soundType) {
+            SoundSampleType.LOW -> checkNotNull(lowSoundId)
+            SoundSampleType.HIGH -> checkNotNull(highSoundId)
+        }
+
+    var isPlaying: Boolean = false
+        internal set(value) {
+            if (field == value) {
+                return
+            }
+
+            field = value
+
+            this.onPropertyChanged?.invoke()
+        }
+
+    var soundType: SoundSampleType = defaultSoundType
+        get() { synchronized(this) { return field } }
+        set(value) {
+            synchronized(this) {
+                if (field == value) {
+                    return
+                }
+
+                this.composition.replaceSound(this, when (value) {
+                    SoundSampleType.LOW -> lowSoundId
+                    SoundSampleType.HIGH -> highSoundId
+                })
+
+                field = value
+
+                this.onPropertyChanged?.invoke()
             }
         }
 
+    fun play() {
+        this.composition.playSound(this)
+    }
+
+    fun stop() {
+        this.composition.stopSound(this)
+    }
+
     override fun onAttach(entity: Entity): Boolean {
-        this.entity = entity
+        this._entity = entity
         return true
     }
 
     override fun onDetach(entity: Entity) {
-        this.entity = null
+        this._entity = null
     }
 
     fun setPose(pose: Pose) {
-        val e = this.entity
+        val e = this._entity
         if (e == null) {
             throw IllegalStateException("Tried to set translation on sound object when entity was detached!")
         }
@@ -108,12 +157,12 @@ class SoundObjectComponent(
         e.setPose(pose)
     }
 
-    private suspend fun initialize() {
+    suspend fun initializeModelAndBehaviors() {
         if (this.isInitialized) {
             return
         }
 
-        val e = checkNotNull(this.entity)
+        val e = checkNotNull(this._entity)
 
         val gltfModel = modelRepository.getOrLoadModel(glbModel).getOrNull() as GltfModel?
         if (gltfModel == null) {
@@ -133,14 +182,14 @@ class SoundObjectComponent(
                     InputEvent.ACTION_UP -> {
                         gltfModelEntity.startAnimation(loop = false)
 
-                        if (soundComponent.composition.state.value == SoundComposition.State.STOPPED) {
-                            soundComponent.composition.stopAllSoundComponents()
-                            soundComponent.play()
-                            soundComponent.composition.play()
-                        } else if (!soundComponent.isPlaying) {
-                            soundComponent.play()
+                        if (composition.state.value == SoundComposition.State.STOPPED) {
+                            composition.stopAllSoundComponents()
+                            play()
+                            composition.play()
+                        } else if (!isPlaying) {
+                            play()
                         } else {
-                            soundComponent.stop()
+                            stop()
                         }
                     }
                 }
@@ -167,28 +216,32 @@ class SoundObjectComponent(
 
         gltfModelEntity.addComponent(simComponent)
 
-        soundComponent.onPropertyChanged = {
-            if (!soundComponent.isPlaying ||
-                soundComponent.composition.state.value != SoundComposition.State.PLAYING
+        this.onPropertyChanged = {
+            if (!isPlaying ||
+                composition.state.value != SoundComposition.State.PLAYING
             ) {
                 simComponent.paused = true
             } else {
                 simComponent.paused = false
-                simComponent.updateFn = when (soundComponent.soundType) {
-                    SoundComposition.SoundSampleType.LOW -> lowBehavior
-                    SoundComposition.SoundSampleType.HIGH -> highBehavior
+                simComponent.updateFn = when (soundType) {
+                    SoundSampleType.LOW -> lowBehavior
+                    SoundSampleType.HIGH -> highBehavior
                 }
             }
         }
 
-        gltfModelEntity.addComponent(InteractableComponent.create(session, mainExecutor,
+        gltfModelEntity.addComponent(InteractableComponent.create(
+            session,
+            session.activity.mainExecutor,
             SoundEntityMovementHandler(
                 e,
-                soundComponent,
+                this,
                 heightToChangeSound = 0.15f,
                 debounceThreshold = 0.05f)))
 
-        gltfModelEntity.addComponent(InteractableComponent.create(session, mainExecutor,
+        gltfModelEntity.addComponent(InteractableComponent.create(
+            session,
+            session.activity.mainExecutor,
             EntityMoveInteractionHandler(
                 e,
                 linearAcceleration = 2.0f,
