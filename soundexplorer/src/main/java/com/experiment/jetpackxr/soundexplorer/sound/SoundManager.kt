@@ -7,13 +7,17 @@ import androidx.xr.scenecore.Entity
 import androidx.xr.scenecore.PointSourceParams
 import androidx.xr.runtime.Session
 import androidx.xr.scenecore.SpatialAudioTrackBuilder
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.Closeable
 import java.io.IOException
 import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class SoundManager @Inject constructor() : Closeable {
 
     private var audioTracks: MutableList<AudioTrack> = mutableListOf()
@@ -51,60 +55,69 @@ class SoundManager @Inject constructor() : Closeable {
         return null
     }
 
-    fun loadSound(session: Session, entity: Entity, soundResourceId: Int): Int? {
-        var audioTrackInitialized = false
-        var audioTrack: AudioTrack? = null
+    suspend fun loadSound(session: Session, entity: Entity, soundResourceId: Int): Int? =
+        withContext (Dispatchers.IO) {
+            var audioTrackInitialized = false
+            var audioTrack: AudioTrack? = null
+            var soundId: Int? = null
 
-        try {
-            val audioBuffer = parseWAVFile(session, soundResourceId)
+            try {
+                val audioBuffer = parseWAVFile(session, soundResourceId)
 
-            if (audioBuffer == null) {
-                return null
+                if (audioBuffer == null) {
+                    return@withContext null
+                }
+
+                val audioAttributes = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+
+                val audioFormatConfig = AudioFormat.Builder()
+                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                    .setSampleRate(44100)
+                    .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                    .build()
+
+                val audioTrackBuilder = AudioTrack.Builder()
+                    .setAudioAttributes(audioAttributes)
+                    .setAudioFormat(audioFormatConfig)
+                    .setBufferSizeInBytes(audioBuffer.size)
+                    .setTransferMode(AudioTrack.MODE_STATIC)
+
+                val pointSourceAttributes = PointSourceAttributes(entity)
+
+                audioTrack = SpatialAudioTrackBuilder
+                    .setPointSourceAttributes(
+                        session,
+                        audioTrackBuilder,
+                        pointSourceAttributes
+                    )
+                    .build()
+
+                audioTrack.write(audioBuffer, 0, audioBuffer.size)
+
+                audioTrack.setLoopPoints(0, audioTrack.bufferSizeInFrames, -1)
+                audioTrack.setVolume(0.0f)
+
+                // Audio tracks are created before any are played so synchronization is not necessary elsewhere.
+                // (It may be desirable to assert that audiotracks is not mutated later, but these calls are highly
+                //  latency sensitive, so leaving additional synchronization out for now. If added later, use lock-free
+                //  synchronization. (atomic flag or something))
+                synchronized(audioTracks) {
+                    audioTracks.add(audioTrack)
+                    soundId = audioTracks.size - 1
+                }
+
+                audioTrackInitialized = true
+            } finally {
+                if (audioTrack != null && !audioTrackInitialized && audioTrack.state == AudioTrack.STATE_INITIALIZED) {
+                    audioTrack.release()
+                }
             }
 
-            val audioAttributes = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build()
-
-            val audioFormatConfig = AudioFormat.Builder()
-                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                .setSampleRate(44100)
-                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                .build()
-
-            val audioTrackBuilder = AudioTrack.Builder()
-                .setAudioAttributes(audioAttributes)
-                .setAudioFormat(audioFormatConfig)
-                .setBufferSizeInBytes(audioBuffer.size)
-                .setTransferMode(AudioTrack.MODE_STATIC)
-
-            val pointSourceAttributes = PointSourceParams(entity)
-
-            audioTrack = SpatialAudioTrackBuilder
-                .setPointSourceParams(
-                    session,
-                    audioTrackBuilder,
-                    pointSourceAttributes
-                )
-                .build()
-
-            audioTrack.write(audioBuffer, 0, audioBuffer.size)
-
-            audioTrack.setLoopPoints(0, audioTrack.bufferSizeInFrames, -1)
-            audioTrack.setVolume(0.0f)
-
-            this.audioTracks.add(audioTrack)
-
-            audioTrackInitialized = true
-        } finally {
-            if (audioTrack != null && !audioTrackInitialized && audioTrack.state == AudioTrack.STATE_INITIALIZED) {
-                audioTrack.release()
-            }
+            return@withContext soundId
         }
-
-        return this.audioTracks.size - 1
-    }
 
     // Note - playing all sounds in order seems to execute faster than starting sounds in an
     // arbitrary order. Measure and exercise caution if you consider refactoring this call to play
@@ -114,8 +127,7 @@ class SoundManager @Inject constructor() : Closeable {
             return
         }
 
-        this.audioTracks[0].play()
-        for (i in 1..<this.audioTracks.size) {
+        for (i in 0..<this.audioTracks.size) {
             this.audioTracks[i].play()
         }
     }

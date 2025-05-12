@@ -32,10 +32,11 @@ import androidx.xr.scenecore.scene
 import com.experiment.jetpackxr.soundexplorer.R
 import com.experiment.jetpackxr.soundexplorer.core.GlbModel
 import com.experiment.jetpackxr.soundexplorer.core.GlbModelRepository
-import com.experiment.jetpackxr.soundexplorer.sound.SoundCompositionComponent
 import com.experiment.jetpackxr.soundexplorer.ui.SoundObjectComponent
 import com.experiment.jetpackxr.soundexplorer.ui.theme.LocalSpacing
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.getValue
@@ -49,58 +50,73 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var session : Session
     private val viewModel : MainViewModel by viewModels()
-    private var soundComponents: Array<SoundCompositionComponent>? = null
     private var soundObjects: Array<SoundObjectComponent>? = null
     private var playOnResume: Boolean = false
     private var soundObjectsReady: Boolean by mutableStateOf(false)
 
+    data class SoundObjectSoundResources (val lowSoundResourceId: Int, val highSoundResourceId: Int)
+
+    // Note that high and low sound selections are intentional. Do not change sound assignments.
+    private val soundResources = arrayOf(
+        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst01_high, highSoundResourceId = R.raw.inst01_low),
+        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst02_mid, highSoundResourceId = R.raw.inst02_high),
+        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst03_high, highSoundResourceId = R.raw.inst03_low),
+        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst04_low, highSoundResourceId = R.raw.inst04_high),
+        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst05_high, highSoundResourceId = R.raw.inst05_mid),
+        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst06_high, highSoundResourceId = R.raw.inst06_low),
+        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst07_low, highSoundResourceId = R.raw.inst07_mid),
+        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst08_high, highSoundResourceId = R.raw.inst08_mid),
+        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst09_low, highSoundResourceId = R.raw.inst09_high)
+    )
+
+    suspend fun loadSounds() {
+        coroutineScope {
+            for (i in soundObjects!!.indices) {
+                launch {
+                    soundObjects!![i].lowSoundId = viewModel.soundManager.loadSound(
+                        sceneCoreSession,
+                        soundObjects!![i].entity,
+                        soundResources[i].lowSoundResourceId
+                    )
+                }
+                launch {
+                    soundObjects!![i].highSoundId = viewModel.soundManager.loadSound(
+                        sceneCoreSession,
+                        soundObjects!![i].entity,
+                        soundResources[i].highSoundResourceId
+                    )
+                }
+            }
+        }
+    }
+
     fun createSoundObjects(
         glbModels : Array<GlbModel>
     ): Array<SoundObjectComponent> {
-        val soundObjs = Array<SoundObjectComponent?>(checkNotNull(soundComponents).size) { null }
+        val soundObjs = Array<SoundObjectComponent?>(checkNotNull(glbModels).size) { null }
         for (i in soundObjs.indices) {
             soundObjs[i] = SoundObjectComponent.createSoundObject(
                 session,
-                session.scene.activitySpace,
                 modelRepository,
                 glbModels[i],
-                checkNotNull(soundComponents)[i],
-                mainExecutor,
+                viewModel.soundComposition,
                 lifecycleScope)
         }
         return soundObjs.map { o -> checkNotNull(o) }.toTypedArray()
     }
 
-    fun initializeSoundsAndCreateObjects() {
+    suspend fun initializeSoundsAndCreateObjects() {
         if (this.soundObjectsReady) {
             return
         }
 
-        // Note that high and low sound selections are intentional. Do not change sound assignments.
-        if (soundComponents == null) {
-            soundComponents = arrayOf(
-                viewModel.soundComposition.addComponent(
-                    lowSoundId = R.raw.inst01_high, highSoundId = R.raw.inst01_low),
-                viewModel.soundComposition.addComponent(
-                    lowSoundId = R.raw.inst02_mid, highSoundId = R.raw.inst02_high),
-                viewModel.soundComposition.addComponent(
-                    lowSoundId = R.raw.inst03_high, highSoundId = R.raw.inst03_low),
-                viewModel.soundComposition.addComponent(
-                    lowSoundId = R.raw.inst04_low, highSoundId = R.raw.inst04_high),
-                viewModel.soundComposition.addComponent(
-                    lowSoundId = R.raw.inst05_high, highSoundId = R.raw.inst05_mid),
-                viewModel.soundComposition.addComponent(
-                    lowSoundId = R.raw.inst06_high, highSoundId = R.raw.inst06_low),
-                viewModel.soundComposition.addComponent(
-                    lowSoundId = R.raw.inst07_low, highSoundId = R.raw.inst07_mid),
-                viewModel.soundComposition.addComponent(
-                    lowSoundId = R.raw.inst08_high, highSoundId = R.raw.inst08_mid),
-                viewModel.soundComposition.addComponent(
-                    lowSoundId = R.raw.inst09_low, highSoundId = R.raw.inst09_high))
-        }
+        this.soundObjects = createSoundObjects(GlbModel.allGlbAnimatedModels.toTypedArray())
 
-        if (this.soundObjects == null) {
-            this.soundObjects = createSoundObjects(GlbModel.allGlbAnimatedModels.toTypedArray())
+        loadSounds()
+
+        for (soundObj in checkNotNull(soundObjects)) {
+            soundObj.initializeModelAndBehaviors()
+            this.viewModel.soundComposition.registerSoundObject(soundObj)
         }
 
         // play the composition by default
@@ -116,42 +132,40 @@ class MainActivity : ComponentActivity() {
         session.resume()
         session.configure(Config(headTracking = Config.HeadTrackingMode.Enabled))
 
-        initializeSoundsAndCreateObjects()
+        lifecycleScope.launch { initializeSoundsAndCreateObjects() }
 
         setContent {
 
-                Subspace {
-                    val isDialogHidden = viewModel.isDialogHidden.collectAsState()
+            Subspace {
+                val isDialogHidden = viewModel.isDialogHidden.collectAsState()
 
-                    SpatialPanel(
-                        modifier = SubspaceModifier
-                            .width(1000.dp)
-                            .height(170.dp)
-                            .offset(z = 200.dp, y = (-200).dp)
-                            .rotate(-20f,0f,0f)
-                    ) {
-                        ShapeAppScreen()
-                    }
-
-                    if (!isDialogHidden.value) {
-                        SpatialPanel(
-                            modifier = SubspaceModifier
-                                .width(400.dp)
-                                .height(290.dp)
-                                .offset(y = 300.dp)
-                                .movable()
-                        ) {
-                            RestartDialogContent(
-                                modifier = Modifier
-                                    .width(400.dp)
-                                    .height(300.dp)
-                                    .padding(top = LocalSpacing.current.xxl)
-                            )
-                        }
-                    }
+                SpatialPanel(
+                    modifier = SubspaceModifier
+                        .width(1000.dp)
+                        .height(170.dp)
+                        .offset(z = 200.dp, y = (-200).dp)
+                        .rotate(-20f,0f,0f)
+                ) {
+                    ShapeAppScreen(contentLoaded = soundObjectsReady)
                 }
 
-
+                if (!isDialogHidden.value) {
+                    SpatialPanel(
+                        modifier = SubspaceModifier
+                            .width(400.dp)
+                            .height(290.dp)
+                            .offset(y = 300.dp)
+                            .movable()
+                    ) {
+                        RestartDialogContent(
+                            modifier = Modifier
+                                .width(400.dp)
+                                .height(300.dp)
+                                .padding(top = LocalSpacing.current.xxl)
+                        )
+                    }
+                }
+            }
         }
 
         viewModel.menuListener = object : MainViewModel.MenuListener {
@@ -163,11 +177,11 @@ class MainActivity : ComponentActivity() {
                 val soundObject = checkNotNull(soundObjects)[shapeIndex]
                 soundObject.setPose(initialLocation)
                 soundObject.hidden = false
-                soundObject.soundComponent.play()
+                soundObject.play()
             }
             override fun onRecallClick(shapeIndex: Int) {
                 val soundObject = checkNotNull(soundObjects)[shapeIndex]
-                soundObject.soundComponent.stop()
+                soundObject.stop()
                 soundObject.hidden = true
             }
         }
@@ -176,7 +190,7 @@ class MainActivity : ComponentActivity() {
             viewModel.deleteAll.collect { event ->
                 if (event.value) {
                     soundObjects?.forEach {
-                        it.soundComponent.stop()
+                        it.stop()
                         it.hidden = true
                     }
                     viewModel.toggleDialogVisibility() // switch visibility
@@ -198,7 +212,5 @@ class MainActivity : ComponentActivity() {
         if (playOnResume) {
             viewModel.soundComposition.play()
         }
-
     }
-
 }
