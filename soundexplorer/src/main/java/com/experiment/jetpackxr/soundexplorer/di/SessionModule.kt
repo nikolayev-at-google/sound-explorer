@@ -1,13 +1,13 @@
 package com.experiment.jetpackxr.soundexplorer.di
 
 import android.app.Activity
-import androidx.activity.ComponentActivity
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.components.ActivityComponent
 import dagger.hilt.android.scopes.ActivityScoped
-import androidx.xr.scenecore.Session as SceneCoreSession
+import androidx.xr.runtime.Session
+import androidx.xr.runtime.SessionCreateSuccess
 
 
 @Module
@@ -16,7 +16,7 @@ object SessionModule {
 
     @Provides
     @ActivityScoped
-    fun provideSceneCoreSession(activity: Activity): SceneCoreSession =
-        SceneCoreSession.create(activity = (activity as ComponentActivity))
+    fun provideSession(activity: Activity): Session =
+        (Session.create(activity) as SessionCreateSuccess).session
 
 }

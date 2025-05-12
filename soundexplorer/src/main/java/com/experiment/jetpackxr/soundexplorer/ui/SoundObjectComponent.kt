@@ -11,7 +11,7 @@ import androidx.xr.scenecore.GltfModelEntity
 import androidx.xr.scenecore.InputEvent
 import androidx.xr.scenecore.InputEventListener
 import androidx.xr.scenecore.InteractableComponent
-import androidx.xr.scenecore.Session
+import androidx.xr.runtime.Session
 import com.experiment.jetpackxr.soundexplorer.core.GlbModel
 import com.experiment.jetpackxr.soundexplorer.core.GlbModelRepository
 import com.experiment.jetpackxr.soundexplorer.sound.SoundComposition

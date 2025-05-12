@@ -4,8 +4,8 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
 import androidx.xr.scenecore.Entity
-import androidx.xr.scenecore.PointSourceAttributes
-import androidx.xr.scenecore.Session
+import androidx.xr.scenecore.PointSourceParams
+import androidx.xr.runtime.Session
 import androidx.xr.scenecore.SpatialAudioTrackBuilder
 import java.io.Closeable
 import java.io.IOException
@@ -48,7 +48,6 @@ class SoundManager @Inject constructor() : Closeable {
             inputStream?.close()
         }
 
-        return null
     }
 
     fun loadSound(session: Session, entity: Entity, soundResourceId: Int): Int? {
@@ -79,10 +78,10 @@ class SoundManager @Inject constructor() : Closeable {
                 .setBufferSizeInBytes(audioBuffer.size)
                 .setTransferMode(AudioTrack.MODE_STATIC)
 
-            val pointSourceAttributes = PointSourceAttributes(entity)
+            val pointSourceAttributes = PointSourceParams(entity)
 
             audioTrack = SpatialAudioTrackBuilder
-                .setPointSourceAttributes(
+                .setPointSourceParams(
                     session,
                     audioTrackBuilder,
                     pointSourceAttributes
@@ -114,7 +113,6 @@ class SoundManager @Inject constructor() : Closeable {
             return
         }
 
-        // val st = System.nanoTime()
         this.audioTracks[0].play()
         for (i in 1..<this.audioTracks.size) {
             this.audioTracks[i].play()

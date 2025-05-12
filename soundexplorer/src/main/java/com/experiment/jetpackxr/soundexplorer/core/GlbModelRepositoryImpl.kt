@@ -3,7 +3,7 @@ package com.experiment.jetpackxr.soundexplorer.core
 import android.util.Log
 import androidx.xr.scenecore.Model
 import com.experiment.jetpackxr.soundexplorer.ext.loadGltfModel
-import androidx.xr.scenecore.Session as SceneCoreSession // Alias for clarity
+import androidx.xr.runtime.Session
 import kotlinx.coroutines.*
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject // For DI frameworks like Hilt/Dagger
@@ -11,7 +11,7 @@ import kotlin.Result // Use kotlin.Result for success/failure
 
 
 class GlbModelRepositoryImpl @Inject constructor(
-    private val sceneCoreSession: SceneCoreSession
+    private val session: Session
 ) : GlbModelRepository {
 
     companion object {
@@ -44,7 +44,7 @@ class GlbModelRepositoryImpl @Inject constructor(
                     Log.d(TAG, "Calling session.loadGltfModel for URI: ${modelIdentifier.assetName}")
 
                     // Call the actual suspend loading function (extension function assumed)
-                    val model = sceneCoreSession.loadGltfModel(modelIdentifier.assetName)
+                    val model = session.loadGltfModel(modelIdentifier.assetName)
                         ?: throw RuntimeException("SceneCoreSession loadGltfModel returned null for '${identifier.assetName}'")
 
                     // Cache the successfully loaded model

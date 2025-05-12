@@ -2,7 +2,7 @@ package com.experiment.jetpackxr.soundexplorer.sound
 
 import androidx.xr.scenecore.Component
 import androidx.xr.scenecore.Entity
-import androidx.xr.scenecore.Session
+import androidx.xr.runtime.Session
 import com.experiment.jetpackxr.soundexplorer.sound.SoundComposition.SoundSampleType
 import java.io.InputStream
 

@@ -23,10 +23,12 @@ import androidx.xr.compose.subspace.layout.movable
 import androidx.xr.compose.subspace.layout.offset
 import androidx.xr.compose.subspace.layout.rotate
 import androidx.xr.compose.subspace.layout.width
+import androidx.xr.runtime.Config
 import androidx.xr.runtime.math.Pose
 import androidx.xr.runtime.math.Quaternion
 import androidx.xr.runtime.math.Vector3
-import androidx.xr.scenecore.Session
+import androidx.xr.runtime.Session
+import androidx.xr.scenecore.scene
 import com.experiment.jetpackxr.soundexplorer.R
 import com.experiment.jetpackxr.soundexplorer.core.GlbModel
 import com.experiment.jetpackxr.soundexplorer.core.GlbModelRepository
@@ -45,7 +47,7 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var modelRepository : GlbModelRepository
     @Inject
-    lateinit var sceneCoreSession : Session
+    lateinit var session : Session
     private val viewModel : MainViewModel by viewModels()
     private var soundComponents: Array<SoundCompositionComponent>? = null
     private var soundObjects: Array<SoundObjectComponent>? = null
@@ -58,8 +60,8 @@ class MainActivity : ComponentActivity() {
         val soundObjs = Array<SoundObjectComponent?>(checkNotNull(soundComponents).size) { null }
         for (i in soundObjs.indices) {
             soundObjs[i] = SoundObjectComponent.createSoundObject(
-                sceneCoreSession,
-                sceneCoreSession.activitySpace,
+                session,
+                session.scene.activitySpace,
                 modelRepository,
                 glbModels[i],
                 checkNotNull(soundComponents)[i],
@@ -110,7 +112,9 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("RestrictedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sceneCoreSession.mainPanelEntity.setHidden(true)
+        session.scene.mainPanelEntity.setHidden(true)
+        session.resume()
+        session.configure(Config(headTracking = Config.HeadTrackingMode.Enabled))
 
         initializeSoundsAndCreateObjects()
 
@@ -125,7 +129,6 @@ class MainActivity : ComponentActivity() {
                             .height(170.dp)
                             .offset(z = 200.dp, y = (-200).dp)
                             .rotate(-20f,0f,0f)
-                            .movable()
                     ) {
                         ShapeAppScreen()
                     }
@@ -153,9 +156,9 @@ class MainActivity : ComponentActivity() {
 
         viewModel.menuListener = object : MainViewModel.MenuListener {
             override fun onShapeClick(shapeIndex: Int) {
-                val initialLocation = checkNotNull(sceneCoreSession.spatialUser.head).transformPoseTo(
+                val initialLocation = checkNotNull(session.scene.spatialUser.head).transformPoseTo(
                     Pose(Vector3.Forward * 1.0f, Quaternion.Identity),
-                    sceneCoreSession.activitySpace)
+                    session.scene.activitySpace)
 
                 val soundObject = checkNotNull(soundObjects)[shapeIndex]
                 soundObject.setPose(initialLocation)
