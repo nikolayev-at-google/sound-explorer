@@ -74,14 +74,14 @@ class MainActivity : ComponentActivity() {
             for (i in soundObjects!!.indices) {
                 launch {
                     soundObjects!![i].lowSoundId = viewModel.soundManager.loadSound(
-                        sceneCoreSession,
+                        session,
                         soundObjects!![i].entity,
                         soundResources[i].lowSoundResourceId
                     )
                 }
                 launch {
                     soundObjects!![i].highSoundId = viewModel.soundManager.loadSound(
-                        sceneCoreSession,
+                        session,
                         soundObjects!![i].entity,
                         soundResources[i].highSoundResourceId
                     )

@@ -85,10 +85,10 @@ class SoundManager @Inject constructor() : Closeable {
                     .setBufferSizeInBytes(audioBuffer.size)
                     .setTransferMode(AudioTrack.MODE_STATIC)
 
-                val pointSourceAttributes = PointSourceAttributes(entity)
+                val pointSourceAttributes = PointSourceParams(entity)
 
                 audioTrack = SpatialAudioTrackBuilder
-                    .setPointSourceAttributes(
+                    .setPointSourceParams(
                         session,
                         audioTrackBuilder,
                         pointSourceAttributes

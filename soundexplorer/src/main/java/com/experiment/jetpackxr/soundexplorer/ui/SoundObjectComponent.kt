@@ -12,6 +12,7 @@ import androidx.xr.scenecore.InputEvent
 import androidx.xr.scenecore.InputEventListener
 import androidx.xr.scenecore.InteractableComponent
 import androidx.xr.runtime.Session
+import androidx.xr.scenecore.scene
 import com.experiment.jetpackxr.soundexplorer.core.GlbModel
 import com.experiment.jetpackxr.soundexplorer.core.GlbModelRepository
 import com.experiment.jetpackxr.soundexplorer.sound.SoundComposition
@@ -36,12 +37,13 @@ class SoundObjectComponent(
             coroutineScope: CoroutineScope,
             defaultSoundType: SoundSampleType = SoundSampleType.LOW
         ): SoundObjectComponent {
-            // Create contentless wrapper entities for the sound object
-            // We need to defer loading the gltf model as it takes too long to load to do it at app launch.
+            // Create contentless wrapper entities for the sound object.
+            // Entities must be created before spatial audio tracks are initialized. So, we defer
+            // object initialization to initializeModelAndBehaviors().
 
             val manipulationEntity = ContentlessEntity.create(session, "ObjectManipEntity", Pose.Identity)
 
-            manipulationEntity.setParent(session.activitySpace)
+            manipulationEntity.setParent(session.scene.activitySpace)
 
             val soc = SoundObjectComponent(
                 session, modelRepository, glbModel, composition, coroutineScope, defaultSoundType)
