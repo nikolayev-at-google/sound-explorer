@@ -28,16 +28,15 @@ import com.experiment.jetpackxr.soundexplorer.R
 @Composable
 fun SplashScreen(
     onFadeOut: () -> Unit,
-    onFinished: () -> Unit,
-    contentLoaded: Boolean
+    onFinished: () -> Unit
 ) {
     var shouldStartAnimation by remember { mutableStateOf(false) }
     var startFadeOut by remember { mutableStateOf(false) }
     var alpha = remember { Animatable(1f) }
     val splashFadeoutDuration = 900
 
-    LaunchedEffect(startFadeOut && contentLoaded) {
-        if (startFadeOut && contentLoaded) {
+    LaunchedEffect(startFadeOut) {
+        if (startFadeOut) {
             alpha.animateTo(
                 targetValue = 0f,
                 animationSpec = tween(durationMillis = splashFadeoutDuration)

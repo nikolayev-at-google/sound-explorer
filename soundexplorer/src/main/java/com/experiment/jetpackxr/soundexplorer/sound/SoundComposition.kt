@@ -1,38 +1,28 @@
 package com.experiment.jetpackxr.soundexplorer.sound
 
 import android.util.Log
-import com.experiment.jetpackxr.soundexplorer.ui.SoundObjectComponent
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
-/**
- * Sound Composition - Represents a musical composition created by a SoundExplorer user.
- *
- * To build a composition, a user may add sound objects to their environment.
- * Each sound object has a low and a high sound sample associated with it.
- * Users may play / pause individual sound objects or the entire composition at any time.
- *
- * All sound samples are loaded as separate instances of SpatialAudioTrack. Once loaded, all sound
- * samples are played at the same time and simply allowed to loop forever after that.
- * When a user plays and stops sounds, we just toggle the volume of it's respective audio track
- * between 0.0 and 1.0. We did this for simplicity and to maintain synchronization between different
- * sounds.
- */
 class SoundComposition  @Inject constructor(
     val soundManager: SoundManager
 ) {
+
     enum class State {
-        READY,
-        PLAYING,
-        STOPPED
+        LOADING,    // object has been instantiated, but there are unattached components
+        READY,      // components have been initialized
+        PLAYING,    // playing
+        STOPPED     // stopped
     }
 
-    private val _state = MutableStateFlow<State>(State.READY)
+    private val _state = MutableStateFlow<State>(State.LOADING)
     val state: StateFlow<State> = _state.asStateFlow()
 
-    private var soundObjects = mutableListOf<SoundObjectComponent>()
+    private var compositionComponents = mutableListOf<SoundCompositionComponent>()
+    private var unattachedComponents = mutableSetOf<SoundCompositionComponent>()
+
     private var soundsInitialized = false
 
     enum class SoundSampleType {
@@ -40,7 +30,7 @@ class SoundComposition  @Inject constructor(
         HIGH
     }
 
-    fun playSound(component: SoundObjectComponent) {
+    fun playSound(component: SoundCompositionComponent) {
         synchronized(this) {
             initializeSounds() // ensure sounds are initialized
             component.isPlaying = true
@@ -50,7 +40,7 @@ class SoundComposition  @Inject constructor(
         }
     }
 
-    fun stopSound(component: SoundObjectComponent) {
+    fun stopSound(component: SoundCompositionComponent) {
         synchronized(this) {
             initializeSounds() // ensure sounds are initialized
             component.isPlaying = false
@@ -58,7 +48,7 @@ class SoundComposition  @Inject constructor(
         }
     }
 
-    fun replaceSound(component: SoundObjectComponent, newSoundStreamId: Int?) {
+    fun replaceSound(component: SoundCompositionComponent, newSoundStreamId: Int?) {
         synchronized(this) {
             initializeSounds() // ensure sounds are initialized
             this.soundManager.setVolume(component.activeSoundStreamId, 0.0f)
@@ -68,13 +58,40 @@ class SoundComposition  @Inject constructor(
         }
     }
 
-    fun registerSoundObject(soundObject: SoundObjectComponent) {
+    fun attachComponent(component: SoundCompositionComponent) {
+        synchronized(this) {
+            this.unattachedComponents.remove(component)
+            if (this.unattachedComponents.isEmpty() && this._state.value == State.LOADING) {
+                this._state.value = State.READY
+            }
+        }
+    }
+
+    fun detachComponent(component: SoundCompositionComponent) {
+        synchronized(this) {
+            // currently when a component is detached, we just forget about it.
+            // components can not be reattached once detached
+            this.unattachedComponents.remove(component)
+            this.compositionComponents.remove(component)
+        }
+    }
+
+    fun addComponent(lowSoundId: Int, highSoundId: Int,
+                     defaultSoundType: SoundSampleType = SoundSampleType.LOW): SoundCompositionComponent {
         synchronized(this) {
             if (this.state.value >= State.PLAYING) {
                 throw IllegalStateException("Tried to add an component after play() was called.")
             }
 
-            this.soundObjects.add(soundObject)
+            this._state.value = State.LOADING
+
+            val component = SoundCompositionComponent(
+                this.soundManager, this, lowSoundId, highSoundId, defaultSoundType)
+
+            this.unattachedComponents.add(component)
+            this.compositionComponents.add(component)
+
+            return component
         }
     }
 
@@ -93,14 +110,14 @@ class SoundComposition  @Inject constructor(
         val timeToPlaySounds = (System.nanoTime() - startTimeToPlaySounds) * 0.000000001
         Log.d("SOUNDEXP", "Time to play sounds - $timeToPlaySounds seconds.")
 
-        for (soundObject in soundObjects) {
-            val componentSoundPlaying = this._state.value == State.PLAYING && soundObject.isPlaying
+        for (compositionComponent in compositionComponents) {
+            val componentSoundPlaying = this._state.value == State.PLAYING && compositionComponent.isPlaying
 
-            soundManager.setVolume(checkNotNull(soundObject.lowSoundId),
-                if (componentSoundPlaying && soundObject.soundType == SoundSampleType.LOW)
+            soundManager.setVolume(checkNotNull(compositionComponent.lowSoundStreamId),
+                if (componentSoundPlaying && compositionComponent.soundType == SoundSampleType.LOW)
                     1.0f else 0.0f)
-            soundManager.setVolume(checkNotNull(soundObject.highSoundId),
-                if (componentSoundPlaying && soundObject.soundType == SoundSampleType.HIGH)
+            soundManager.setVolume(checkNotNull(compositionComponent.highSoundStreamId),
+                if (componentSoundPlaying && compositionComponent.soundType == SoundSampleType.HIGH)
                     1.0f else 0.0f)
         }
 
@@ -120,12 +137,12 @@ class SoundComposition  @Inject constructor(
                 return true // calling initialize sounds will set volumes appropriately, no need to continue.
             }
 
-            for (soundObject in soundObjects) {
+            for (compositionComponent in compositionComponents) {
                 this.soundManager.setVolume(
-                    soundObject.activeSoundStreamId,
-                    if (soundObject.isPlaying) 1.0f else 0.0f
+                    compositionComponent.activeSoundStreamId,
+                    if (compositionComponent.isPlaying) 1.0f else 0.0f
                 )
-                soundObject.onPropertyChanged?.invoke()
+                compositionComponent.onPropertyChanged?.invoke()
             }
 
             return true
@@ -140,9 +157,9 @@ class SoundComposition  @Inject constructor(
 
             this._state.value = State.STOPPED
 
-            for (soundObject in this.soundObjects) {
-                this.soundManager.setVolume(soundObject.activeSoundStreamId, 0.0f)
-                soundObject.onPropertyChanged?.invoke()
+            for (compositionComponent in this.compositionComponents) {
+                this.soundManager.setVolume(compositionComponent.activeSoundStreamId, 0.0f)
+                compositionComponent.onPropertyChanged?.invoke()
             }
 
             return true
@@ -151,12 +168,12 @@ class SoundComposition  @Inject constructor(
 
     fun stopAllSoundComponents(): Boolean {
         synchronized(this) {
-            if (this._state.value == State.READY) {
+            if (this._state.value == State.LOADING || this._state.value == State.READY) {
                 return false
             }
 
-            for (soundObject in this.soundObjects) {
-                soundObject.stop()
+            for (compositionComponent in this.compositionComponents) {
+                compositionComponent.stop()
             }
 
             return true
