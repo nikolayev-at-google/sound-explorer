@@ -31,7 +31,6 @@ import androidx.xr.scenecore.scene
 import com.experiment.jetpackxr.soundexplorer.core.GlbModel
 import com.experiment.jetpackxr.soundexplorer.core.GlbModelRepository
 import com.experiment.jetpackxr.soundexplorer.sound.SoundComposition
-import com.experiment.jetpackxr.soundexplorer.sound.SoundComposition.SoundSampleType
 import kotlinx.coroutines.CoroutineScope
 
 class SoundObjectComponent(
@@ -39,8 +38,7 @@ class SoundObjectComponent(
     val modelRepository : GlbModelRepository,
     val glbModel : GlbModel,
     val composition: SoundComposition,
-    val coroutineScope: CoroutineScope,
-    defaultSoundType: SoundSampleType = SoundSampleType.LOW
+    val coroutineScope: CoroutineScope
 ) : Component {
 
     companion object {
@@ -49,8 +47,7 @@ class SoundObjectComponent(
             modelRepository : GlbModelRepository,
             glbModel : GlbModel,
             composition: SoundComposition,
-            coroutineScope: CoroutineScope,
-            defaultSoundType: SoundSampleType = SoundSampleType.LOW
+            coroutineScope: CoroutineScope
         ): SoundObjectComponent {
             // Create contentless wrapper entities for the sound object.
             // Entities must be created before spatial audio tracks are initialized. So, we defer
@@ -61,7 +58,7 @@ class SoundObjectComponent(
             manipulationEntity.setParent(session.scene.activitySpace)
 
             val soc = SoundObjectComponent(
-                session, modelRepository, glbModel, composition, coroutineScope, defaultSoundType)
+                session, modelRepository, glbModel, composition, coroutineScope)
 
             manipulationEntity.addComponent(soc)
 
@@ -73,8 +70,13 @@ class SoundObjectComponent(
 
     var onPropertyChanged: (() -> Unit)? = null
 
-    var lowSoundId: Int? = null
-    var highSoundId: Int? = null
+    var lowSoundId: Int = -1
+    var highSoundId: Int = -1
+
+    var lowSoundVolume: Float = 0.5f
+        private set
+    var highSoundVolume: Float = 0.5f
+        private set
 
     private var isInitialized = false
     private var _entity: Entity? = null
@@ -110,14 +112,8 @@ class SoundObjectComponent(
             e.setHidden(value)
         }
 
-    val activeSoundStreamId: Int
-        get() = when (this.soundType) {
-            SoundSampleType.LOW -> checkNotNull(lowSoundId)
-            SoundSampleType.HIGH -> checkNotNull(highSoundId)
-        }
-
     var isPlaying: Boolean = false
-        internal set(value) {
+        private set(value) {
             if (field == value) {
                 return
             }
@@ -127,31 +123,20 @@ class SoundObjectComponent(
             this.onPropertyChanged?.invoke()
         }
 
-    var soundType: SoundSampleType = defaultSoundType
-        get() { synchronized(this) { return field } }
-        set(value) {
-            synchronized(this) {
-                if (field == value) {
-                    return
-                }
-
-                this.composition.replaceSound(this, when (value) {
-                    SoundSampleType.LOW -> lowSoundId
-                    SoundSampleType.HIGH -> highSoundId
-                })
-
-                field = value
-
-                this.onPropertyChanged?.invoke()
-            }
-        }
-
     fun play() {
-        this.composition.playSound(this)
+        this.isPlaying = true
+        this.composition.updateSoundObjectPlayback(this)
     }
 
     fun stop() {
-        this.composition.stopSound(this)
+        this.isPlaying = false
+        this.composition.updateSoundObjectPlayback(this)
+    }
+
+    fun setVolume(lowSoundVolume: Float, highSoundVolume: Float) {
+        this.lowSoundVolume = lowSoundVolume.coerceIn(0.0f, 1.0f)
+        this.highSoundVolume = highSoundVolume.coerceIn(0.0f, 1.0f)
+        this.composition.updateSoundObjectPlayback(this)
     }
 
     override fun onAttach(entity: Entity): Boolean {
@@ -211,48 +196,28 @@ class SoundObjectComponent(
             }
         }
 
-        val lowBehavior = {
-                e: Entity, dT: Double ->
-            e.setPose(Pose(
-                e.getPose().translation,
-                e.getPose().rotation * Quaternion.fromAxisAngle(Vector3.One, 40.0f * dT.toFloat())
-            ))
-        }
-
-        val highBehavior = {
-                e: Entity, dT: Double ->
-            e.setPose(Pose(
-                e.getPose().translation,
-                e.getPose().rotation * Quaternion.fromAxisAngle(Vector3.Right, 70.0f * dT.toFloat())
-            ))
-        }
-
-        val simComponent = SimpleSimulationComponent(coroutineScope, lowBehavior)
+        val simComponent = SimpleSimulationComponent(coroutineScope, {
+                    e: Entity, dT: Double ->
+                e.setPose(Pose(
+                    e.getPose().translation,
+                    e.getPose().rotation
+                            * Quaternion.fromAxisAngle(Vector3.One, 40.0f * dT.toFloat() * lowSoundVolume)
+                            * Quaternion.fromAxisAngle(Vector3.Right, 70.0f * dT.toFloat() * highSoundVolume)
+                ))
+            })
 
         gltfModelEntity.addComponent(simComponent)
 
         this.onPropertyChanged = {
-            if (!isPlaying ||
-                composition.state.value != SoundComposition.State.PLAYING
-            ) {
-                simComponent.paused = true
-            } else {
-                simComponent.paused = false
-                simComponent.updateFn = when (soundType) {
-                    SoundSampleType.LOW -> lowBehavior
-                    SoundSampleType.HIGH -> highBehavior
-                }
-            }
+            simComponent.paused = !isPlaying || composition.state.value != SoundComposition.State.PLAYING
         }
 
         gltfModelEntity.addComponent(InteractableComponent.create(
             session,
             session.activity.mainExecutor,
             SoundEntityMovementHandler(
-                e,
                 this,
-                heightToChangeSound = 0.15f,
-                debounceThreshold = 0.05f)))
+                heightToChangeSound = 0.4f)))
 
         gltfModelEntity.addComponent(InteractableComponent.create(
             session,

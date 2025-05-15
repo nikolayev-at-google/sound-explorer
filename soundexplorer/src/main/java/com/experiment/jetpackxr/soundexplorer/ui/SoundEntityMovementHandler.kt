@@ -15,43 +15,32 @@
  */
 package com.experiment.jetpackxr.soundexplorer.ui
 
-import androidx.xr.scenecore.Entity
 import androidx.xr.scenecore.InputEvent
 import androidx.xr.scenecore.InputEventListener
-import com.experiment.jetpackxr.soundexplorer.sound.SoundComposition
 
 class SoundEntityMovementHandler(
-    // entity whose position will be tracked to determine if the sound should change
-    val entity: Entity,
-    // sound component that is used to change the sound type
-    val soundComponent: SoundObjectComponent,
+    // sound object whose position will be tracked to determine if the sound should change
+    val soundObject: SoundObjectComponent,
     // difference in height relative to the initial location at which the sound changes
-    heightToChangeSound: Float,
-    // additional height difference to transition from higher -> lower states (to avoid jitter)
-    val debounceThreshold: Float = 0.05f
+    val heightToChangeSound: Float
 ) : InputEventListener {
 
-    private val initialHeight = entity.getPose().translation.y
-    private val highHeightThreshold = initialHeight + heightToChangeSound
+    private val initialHeight = soundObject.entity.getPose().translation.y
 
     override fun onInputEvent(inputEvent: InputEvent) {
         if (inputEvent.action != InputEvent.ACTION_MOVE) {
             return
         }
 
-        val currentHeight = this.entity.getPose().translation.y
+        val relativeHeight = this.soundObject.entity.getPose().translation.y - initialHeight
 
-        when (this.soundComponent.soundType) {
-            SoundComposition.SoundSampleType.LOW -> {
-                if (currentHeight > highHeightThreshold) {
-                    this.soundComponent.soundType = SoundComposition.SoundSampleType.HIGH
-                }
-            }
-            SoundComposition.SoundSampleType.HIGH -> {
-                if (currentHeight < highHeightThreshold - debounceThreshold) {
-                    this.soundComponent.soundType = SoundComposition.SoundSampleType.LOW
-                }
-            }
+        if (relativeHeight < -heightToChangeSound) {
+            this.soundObject.setVolume(1.0f, 0.0f)
+        } else if (relativeHeight > heightToChangeSound) {
+            this.soundObject.setVolume(0.0f, 1.0f)
+        } else {
+            val highSoundVolume = (relativeHeight + heightToChangeSound) / (2.0f * heightToChangeSound)
+            this.soundObject.setVolume(1.0f - highSoundVolume, highSoundVolume)
         }
     }
 }

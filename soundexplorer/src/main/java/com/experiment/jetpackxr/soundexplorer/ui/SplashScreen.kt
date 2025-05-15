@@ -53,6 +53,7 @@ fun SplashScreen(
 
     LaunchedEffect(startFadeOut && contentLoaded) {
         if (startFadeOut && contentLoaded) {
+            onFadeOut()
             alpha.animateTo(
                 targetValue = 0f,
                 animationSpec = tween(durationMillis = splashFadeoutDuration)
@@ -78,11 +79,9 @@ fun SplashScreen(
                         setImageDrawable(animation)
                         animation?.registerAnimationCallback(object : Animatable2.AnimationCallback() {
                             override fun onAnimationEnd(drawable: Drawable?) {
-                                post(
-                                    {
-                                        startFadeOut = true
-                                        onFadeOut()
-                                    })
+                                animation.start()
+                                // Set startFadeOut on animation end to ensure that the animation plays at least once.
+                                post { startFadeOut = true }
                             }
                         })
                         animation?.start()

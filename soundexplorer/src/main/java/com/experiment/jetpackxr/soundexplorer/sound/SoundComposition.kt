@@ -15,7 +15,6 @@
  */
 package com.experiment.jetpackxr.soundexplorer.sound
 
-import android.util.Log
 import com.experiment.jetpackxr.soundexplorer.ui.SoundObjectComponent
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -50,35 +49,16 @@ class SoundComposition  @Inject constructor(
     private var soundObjects = mutableListOf<SoundObjectComponent>()
     private var soundsInitialized = false
 
-    enum class SoundSampleType {
-        LOW,
-        HIGH
-    }
-
-    fun playSound(component: SoundObjectComponent) {
+    fun updateSoundObjectPlayback(soundObject: SoundObjectComponent) {
         synchronized(this) {
             initializeSounds() // ensure sounds are initialized
-            component.isPlaying = true
-            if (this._state.value == State.PLAYING) {
-                this.soundManager.setVolume(component.activeSoundStreamId, 1.0f)
-            }
-        }
-    }
 
-    fun stopSound(component: SoundObjectComponent) {
-        synchronized(this) {
-            initializeSounds() // ensure sounds are initialized
-            component.isPlaying = false
-            this.soundManager.setVolume(component.activeSoundStreamId, 0.0f)
-        }
-    }
-
-    fun replaceSound(component: SoundObjectComponent, newSoundStreamId: Int?) {
-        synchronized(this) {
-            initializeSounds() // ensure sounds are initialized
-            this.soundManager.setVolume(component.activeSoundStreamId, 0.0f)
-            if (newSoundStreamId != null && this._state.value == State.PLAYING) {
-                this.soundManager.setVolume(newSoundStreamId, if (component.isPlaying) 1.0f else 0.0f)
+            if (soundObject.isPlaying && this._state.value == State.PLAYING) {
+                this.soundManager.setVolume(soundObject.lowSoundId, soundObject.lowSoundVolume)
+                this.soundManager.setVolume(soundObject.highSoundId, soundObject.highSoundVolume)
+            } else {
+                this.soundManager.setVolume(soundObject.lowSoundId, 0.0f)
+                this.soundManager.setVolume(soundObject.highSoundId, 0.0f)
             }
         }
     }
@@ -98,25 +78,13 @@ class SoundComposition  @Inject constructor(
             return
         }
 
-        val startTimeToPlaySounds = System.nanoTime()
-
-        // Start playing all sounds at the same time.
-        soundManager.playAllSounds()
-
-        // Log the time spent on calls to play sounds. Sounds are intended to start playback at
-        // precisely the same time and any delay will negatively impact how well they align.
-        val timeToPlaySounds = (System.nanoTime() - startTimeToPlaySounds) * 0.000000001
-        Log.d("SOUNDEXP", "Time to play sounds - $timeToPlaySounds seconds.")
-
         for (soundObject in soundObjects) {
-            val componentSoundPlaying = this._state.value == State.PLAYING && soundObject.isPlaying
+            val soundObjectPlaying = this._state.value == State.PLAYING && soundObject.isPlaying
 
-            soundManager.setVolume(checkNotNull(soundObject.lowSoundId),
-                if (componentSoundPlaying && soundObject.soundType == SoundSampleType.LOW)
-                    1.0f else 0.0f)
-            soundManager.setVolume(checkNotNull(soundObject.highSoundId),
-                if (componentSoundPlaying && soundObject.soundType == SoundSampleType.HIGH)
-                    1.0f else 0.0f)
+            soundManager.setVolume(soundObject.lowSoundId,
+                if (soundObjectPlaying) soundObject.lowSoundVolume else 0.0f)
+            soundManager.setVolume(soundObject.highSoundId,
+                if (soundObjectPlaying) soundObject.highSoundVolume else 0.0f)
         }
 
         this.soundsInitialized = true
@@ -136,10 +104,10 @@ class SoundComposition  @Inject constructor(
             }
 
             for (soundObject in soundObjects) {
-                this.soundManager.setVolume(
-                    soundObject.activeSoundStreamId,
-                    if (soundObject.isPlaying) 1.0f else 0.0f
-                )
+                this.soundManager.setVolume(soundObject.lowSoundId,
+                    if (soundObject.isPlaying) soundObject.lowSoundVolume else 0.0f)
+                this.soundManager.setVolume(soundObject.highSoundId,
+                    if (soundObject.isPlaying) soundObject.highSoundVolume else 0.0f)
                 soundObject.onPropertyChanged?.invoke()
             }
 
@@ -156,7 +124,8 @@ class SoundComposition  @Inject constructor(
             this._state.value = State.STOPPED
 
             for (soundObject in this.soundObjects) {
-                this.soundManager.setVolume(soundObject.activeSoundStreamId, 0.0f)
+                this.soundManager.setVolume(soundObject.lowSoundId, 0.0f)
+                this.soundManager.setVolume(soundObject.highSoundId, 0.0f)
                 soundObject.onPropertyChanged?.invoke()
             }
 

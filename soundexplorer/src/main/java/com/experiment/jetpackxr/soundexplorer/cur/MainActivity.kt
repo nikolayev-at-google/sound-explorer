@@ -17,6 +17,7 @@ package com.experiment.jetpackxr.soundexplorer.cur
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -50,7 +51,6 @@ import com.experiment.jetpackxr.soundexplorer.core.GlbModelRepository
 import com.experiment.jetpackxr.soundexplorer.ui.SoundObjectComponent
 import com.experiment.jetpackxr.soundexplorer.ui.theme.LocalSpacing
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.getValue
@@ -83,27 +83,6 @@ class MainActivity : ComponentActivity() {
         SoundObjectSoundResources(lowSoundResourceId = R.raw.inst09_low, highSoundResourceId = R.raw.inst09_high)
     )
 
-    suspend fun loadSounds() {
-        coroutineScope {
-            for (i in soundObjects!!.indices) {
-                launch {
-                    soundObjects!![i].lowSoundId = viewModel.soundManager.loadSound(
-                        session,
-                        soundObjects!![i].entity,
-                        soundResources[i].lowSoundResourceId
-                    )
-                }
-                launch {
-                    soundObjects!![i].highSoundId = viewModel.soundManager.loadSound(
-                        session,
-                        soundObjects!![i].entity,
-                        soundResources[i].highSoundResourceId
-                    )
-                }
-            }
-        }
-    }
-
     fun createSoundObjects(
         glbModels : Array<GlbModel>
     ): Array<SoundObjectComponent> {
@@ -126,7 +105,28 @@ class MainActivity : ComponentActivity() {
 
         this.soundObjects = createSoundObjects(GlbModel.allGlbAnimatedModels.toTypedArray())
 
-        loadSounds()
+        for (i in soundObjects!!.indices) {
+            soundObjects!![i].lowSoundId = checkNotNull(viewModel.soundManager.loadSound(
+                session,
+                soundObjects!![i].entity,
+                soundResources[i].lowSoundResourceId
+            ))
+            soundObjects!![i].highSoundId = checkNotNull(viewModel.soundManager.loadSound(
+                session,
+                soundObjects!![i].entity,
+                soundResources[i].highSoundResourceId
+            ))
+        }
+
+        val startTimeToPlaySounds = System.nanoTime()
+
+        // Start playing all sounds at the same time.
+        this.viewModel.soundManager.playAllSounds()
+
+        // Log the time spent on calls to play sounds. Sounds are intended to start playback at
+        // precisely the same time and any delay will negatively impact how well they align.
+        val timeToPlaySounds = (System.nanoTime() - startTimeToPlaySounds) * 0.000000001
+        Log.d("SOUNDEXPLOG", "Time to play sounds - $timeToPlaySounds seconds.")
 
         for (soundObj in checkNotNull(soundObjects)) {
             soundObj.initializeModelAndBehaviors()
