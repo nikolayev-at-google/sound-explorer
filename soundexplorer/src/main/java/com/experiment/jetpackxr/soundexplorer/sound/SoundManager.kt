@@ -22,8 +22,6 @@ import androidx.xr.scenecore.Entity
 import androidx.xr.scenecore.PointSourceParams
 import androidx.xr.runtime.Session
 import androidx.xr.scenecore.SpatialAudioTrackBuilder
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.Closeable
 import java.io.IOException
 import java.io.InputStream
@@ -70,69 +68,76 @@ class SoundManager @Inject constructor() : Closeable {
         return null
     }
 
-    suspend fun loadSound(session: Session, entity: Entity, soundResourceId: Int): Int? =
-        withContext (Dispatchers.IO) {
-            var audioTrackInitialized = false
-            var audioTrack: AudioTrack? = null
-            var soundId: Int? = null
+    // Note! - loadSound is purposefully not a suspend function and is allowed to execute
+    // on the callers thread. It is important to minimize the time for playAllSounds() to
+    // execute as much as possible so all sounds play in sync.
+    // By playing immediately after loading on the same thread, we maximize chances for
+    // exploiting locality. (yielding a ~2x perf improvement vs calling loadSound in separate
+    // coroutines and scheduling using the IO coroutine context)
+    // Be careful and check for regressions in the time to play all the sounds if refactors
+    // are made to this implementation or the way these functions are called from MainActivity.
+    fun loadSound(session: Session, entity: Entity, soundResourceId: Int): Int? {
+        var audioTrackInitialized = false
+        var audioTrack: AudioTrack? = null
+        var soundId: Int? = null
 
-            try {
-                val audioBuffer = parseWAVFile(session, soundResourceId)
+        try {
+            val audioBuffer = parseWAVFile(session, soundResourceId)
 
-                if (audioBuffer == null) {
-                    return@withContext null
-                }
-
-                val audioAttributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-
-                val audioFormatConfig = AudioFormat.Builder()
-                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                    .setSampleRate(44100)
-                    .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                    .build()
-
-                val audioTrackBuilder = AudioTrack.Builder()
-                    .setAudioAttributes(audioAttributes)
-                    .setAudioFormat(audioFormatConfig)
-                    .setBufferSizeInBytes(audioBuffer.size)
-                    .setTransferMode(AudioTrack.MODE_STATIC)
-
-                val pointSourceAttributes = PointSourceParams(entity)
-
-                audioTrack = SpatialAudioTrackBuilder
-                    .setPointSourceParams(
-                        session,
-                        audioTrackBuilder,
-                        pointSourceAttributes
-                    )
-                    .build()
-
-                audioTrack.write(audioBuffer, 0, audioBuffer.size)
-
-                audioTrack.setLoopPoints(0, audioTrack.bufferSizeInFrames, -1)
-                audioTrack.setVolume(0.0f)
-
-                // Audio tracks are created before any are played so synchronization is not necessary elsewhere.
-                // (It may be desirable to assert that audiotracks is not mutated later, but these calls are highly
-                //  latency sensitive, so leaving additional synchronization out for now. If added later, use lock-free
-                //  synchronization. (atomic flag or something))
-                synchronized(audioTracks) {
-                    audioTracks.add(audioTrack)
-                    soundId = audioTracks.size - 1
-                }
-
-                audioTrackInitialized = true
-            } finally {
-                if (audioTrack != null && !audioTrackInitialized && audioTrack.state == AudioTrack.STATE_INITIALIZED) {
-                    audioTrack.release()
-                }
+            if (audioBuffer == null) {
+                return null
             }
 
-            return@withContext soundId
+            val audioAttributes = AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+
+            val audioFormatConfig = AudioFormat.Builder()
+                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                .setSampleRate(44100)
+                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                .build()
+
+            val audioTrackBuilder = AudioTrack.Builder()
+                .setAudioAttributes(audioAttributes)
+                .setAudioFormat(audioFormatConfig)
+                .setBufferSizeInBytes(audioBuffer.size)
+                .setTransferMode(AudioTrack.MODE_STATIC)
+
+            val pointSourceAttributes = PointSourceParams(entity)
+
+            audioTrack = SpatialAudioTrackBuilder
+                .setPointSourceParams(
+                    session,
+                    audioTrackBuilder,
+                    pointSourceAttributes
+                )
+                .build()
+
+            audioTrack.write(audioBuffer, 0, audioBuffer.size)
+
+            audioTrack.setLoopPoints(0, audioTrack.bufferSizeInFrames, -1)
+            audioTrack.setVolume(0.0f)
+
+            // Audio tracks are created before any are played so synchronization is not necessary elsewhere.
+            // (It may be desirable to assert that audiotracks is not mutated later, but these calls are highly
+            //  latency sensitive, so leaving additional synchronization out for now. If added later, use lock-free
+            //  synchronization. (atomic flag or something))
+            synchronized(audioTracks) {
+                audioTracks.add(audioTrack)
+                soundId = audioTracks.size - 1
+            }
+
+            audioTrackInitialized = true
+        } finally {
+            if (audioTrack != null && !audioTrackInitialized && audioTrack.state == AudioTrack.STATE_INITIALIZED) {
+                audioTrack.release()
+            }
         }
+
+        return soundId
+    }
 
     // Note - playing all sounds in order seems to execute faster than starting sounds in an
     // arbitrary order. Measure and exercise caution if you consider refactoring this call to play

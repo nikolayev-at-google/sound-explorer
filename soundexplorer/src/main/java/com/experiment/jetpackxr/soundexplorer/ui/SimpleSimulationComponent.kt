@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class SimpleSimulationComponent (
     val coroutineScope: CoroutineScope,
-    var updateFn: (entity: Entity, deltaTime: Double) -> Unit) : Component {
+    val updateFn: (entity: Entity, deltaTime: Double) -> Unit) : Component {
 
     // must be accessed on same thread that executes simulationLoop
     var paused: Boolean = false

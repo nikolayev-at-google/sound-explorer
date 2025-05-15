@@ -89,8 +89,8 @@ fun ShapeAppScreen(
             contentLoaded
         )
 
-        LaunchedEffect(startFadeIn) {
-            if (startFadeIn) {
+        LaunchedEffect(startFadeIn && contentLoaded) {
+            if (startFadeIn && contentLoaded) {
                 alpha.animateTo(
                     targetValue = 1f,
                     animationSpec = tween(durationMillis = 800)
