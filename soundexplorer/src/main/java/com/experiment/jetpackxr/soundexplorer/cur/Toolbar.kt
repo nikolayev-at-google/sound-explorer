@@ -54,10 +54,12 @@ enum class ButtonVisualState {
     PRESSED
 }
 
+/** Composable for the Main Navigation Panel */
 @Composable
 fun CustomToolbar(
     modifier: Modifier = Modifier,
     toolbarState: ToolbarState = ToolbarState.ENABLED,
+    showPause: Boolean = false,
     onRefreshClick: () -> Unit,
     onPauseClick: () -> Unit,
     onPlayClick: () -> Unit
@@ -112,11 +114,11 @@ fun CustomToolbar(
             interactionSource = refreshInteractionSource
         )
 
-        // Pause Button
+        // Play/Pause Button
         CustomIconButton(
-            onClick = onPauseClick,
-            iconId = R.drawable.ic_play, // R.drawable.ic_pause
-            contentDescription = "Pause",
+            onClick = if (showPause) onPauseClick else onPlayClick,
+            iconId = if (showPause) R.drawable.ic_pause else R.drawable.ic_play,
+            contentDescription = if (showPause) "Pause" else "Play",
             isEnabled = isEnabled,
             visualState = pauseButtonVisualState,
             iconColor = iconColor,
@@ -140,7 +142,7 @@ private fun CustomIconButton(
     val iconBgColor = when (visualState) {
         ButtonVisualState.PRESSED -> iconBackgroundColorBase.copy(alpha = 0.7f) // Darker when pressed
         ButtonVisualState.HOVERED -> iconBackgroundColorBase.copy(alpha = 0.85f) // Slightly lighter/more prominent when hovered
-        ButtonVisualState.NORMAL -> iconBackgroundColorBase
+        ButtonVisualState.NORMAL -> iconBackgroundColorBase.copy(alpha = 0.0f)
     }
 
     IconButton(
@@ -156,13 +158,13 @@ private fun CustomIconButton(
             painter = painterResource(id = iconId),
             contentDescription = contentDescription,
             tint = iconColor,
-            modifier = Modifier.size(28.dp) // Adjust icon size as needed
+            modifier = Modifier.size(32.dp) // Adjust icon size as needed
         )
     }
 }
 
 
-// --- Preview Section ---
+//region  Preview Section
 
 @Preview(showBackground = true, backgroundColor = 0xFF444444)
 @Composable
@@ -258,3 +260,5 @@ fun PressedPauseButtonPreview() {
         )
     }
 }
+
+//endregion  Preview Section

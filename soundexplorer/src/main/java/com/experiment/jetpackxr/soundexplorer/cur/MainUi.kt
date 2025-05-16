@@ -31,7 +31,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -46,11 +45,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.experiment.jetpackxr.soundexplorer.sound.SoundComposition
 import androidx.compose.foundation.Image
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
@@ -80,7 +77,7 @@ fun ShapeAppScreen(
     Box(
         modifier = Modifier.fillMaxWidth()
     ) {
-        var alpha = remember { Animatable(0f) }
+        val alpha = remember { Animatable(0f) }
         var startFadeIn by remember { mutableStateOf(false) }
 
         SplashScreen(
@@ -106,104 +103,40 @@ fun ShapeAppScreen(
             onRecallClick = { index -> mainViewModel.recallShape(index) },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = LocalSpacing.current.xxxl)
+                .padding(bottom = LocalSpacing.current.xxxxl)
                 .graphicsLayer(alpha = alpha.value)
         )
 
         // Main navigation panel at the bottom
-        MainNavigationPanel(
-            hasSpawnedShapes = mainViewModel.hasSpawnedShapes,
-            onRestartClick = { mainViewModel.toggleDialogVisibility() },
+        val state = mainViewModel.soundComposition.state.collectAsState()
+        var showPause by remember { mutableStateOf(true) }
+        val onClickFunc : () -> Unit = {
+            when (state.value) {
+                SoundComposition.State.READY -> {
+                    mainViewModel.soundComposition.play()
+                    showPause = true
+                }
+                SoundComposition.State.PLAYING -> {
+                    mainViewModel.soundComposition.stop()
+                    showPause = false
+                }
+                SoundComposition.State.STOPPED -> {
+                    mainViewModel.soundComposition.play()
+                    showPause = true
+                }
+
+            }
+        }
+        CustomToolbar(
+            toolbarState = if (mainViewModel.hasSpawnedShapes) ToolbarState.ENABLED else ToolbarState.DISABLED,
+            showPause = showPause,
+            onRefreshClick = { mainViewModel.toggleDialogVisibility() },
+            onPauseClick = onClickFunc,
+            onPlayClick = onClickFunc,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .graphicsLayer(alpha = alpha.value)
         )
-    }
-}
-
-/** Composable for the Main Navigation Panel */
-@Composable
-fun MainNavigationPanel(
-    hasSpawnedShapes: Boolean,
-    onRestartClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: MainViewModel = viewModel()
-) {
-    Surface(
-        shape = RoundedCornerShape(100.dp),
-        color = Color(0xFF333333),
-        modifier = modifier
-            .height(64.dp)
-            .width(150.dp)
-            .animateContentSize()
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        ) {
-            // Restart/Reset button
-            IconButton(
-                onClick = onRestartClick,
-                enabled = hasSpawnedShapes,
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_restart),
-                    contentDescription = "Reset",
-                    tint = if (hasSpawnedShapes) Color.White else Color.White.copy(alpha = 0.5f),
-                    modifier = Modifier.size(40.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(32.dp))
-
-            // Play/Pause button
-            when (viewModel.soundComposition.state.collectAsState().value) {
-                SoundComposition.State.READY -> {
-                    IconButton(
-                        onClick = { viewModel.soundComposition.play() },
-                        enabled = hasSpawnedShapes,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_play),
-                            contentDescription = "Play",
-                            tint = if (hasSpawnedShapes) Color.White else Color.White.copy(alpha = 0.5f),
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-                }
-                SoundComposition.State.PLAYING -> {
-                    IconButton(
-                        onClick = { viewModel.soundComposition.stop() },
-                        enabled = hasSpawnedShapes,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_pause),
-                            contentDescription = "Pause",
-                            tint = if (hasSpawnedShapes) Color.White else Color.White.copy(alpha = 0.5f),
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-                }
-                SoundComposition.State.STOPPED -> {
-                    IconButton(
-                        onClick = { viewModel.soundComposition.play() },
-                        enabled = hasSpawnedShapes,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_play),
-                            contentDescription = "Play",
-                            tint = if (hasSpawnedShapes) Color.White else Color.White.copy(alpha = 0.5f),
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -308,14 +241,13 @@ fun ShapeButton(
                     tint = if (isPressed) Color.White else Color.White.copy(alpha = 0.7f),
                     modifier = Modifier.size(48.dp)
                 )
-            } else {
-                Image(
-                    painter = painterResource(id = shapeRes),
-                    contentDescription = "Shape $shapeRes",
-                    alpha = 0.5f,
-                    modifier = Modifier.size(72.dp)
-                )
             }
+            Image(
+                painter = painterResource(id = shapeRes),
+                contentDescription = "Shape $shapeRes",
+                alpha = 0.5f,
+                modifier = Modifier.size(72.dp)
+            )
         } else {
             // Regular shape with potential hover/press states
             Image(

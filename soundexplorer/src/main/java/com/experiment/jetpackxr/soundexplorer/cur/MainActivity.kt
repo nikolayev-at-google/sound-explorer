@@ -155,7 +155,7 @@ class MainActivity : ComponentActivity() {
                 SpatialPanel(
                     modifier = SubspaceModifier
                         .width(1000.dp)
-                        .height(170.dp)
+                        .height(190.dp)
                         .offset(z = 200.dp, y = (-200).dp)
                         .rotate(-20f,0f,0f)
                 ) {
@@ -167,7 +167,7 @@ class MainActivity : ComponentActivity() {
                         modifier = SubspaceModifier
                             .width(400.dp)
                             .height(290.dp)
-                            .offset(y = 300.dp)
+                            .offset(y = 250.dp)
                             .movable()
                     ) {
                         RestartDialogContent(
