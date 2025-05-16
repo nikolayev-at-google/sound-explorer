@@ -246,7 +246,7 @@ fun ShapeButton(
                 painter = painterResource(id = shapeRes),
                 contentDescription = "Shape $shapeRes",
                 alpha = 0.5f,
-                modifier = Modifier.size(72.dp)
+                modifier = Modifier.size(48.dp)
             )
         } else {
             // Regular shape with potential hover/press states
@@ -257,7 +257,7 @@ fun ShapeButton(
                     // Brighter fill when pressed
                     ColorFilter.lighting(Color.White, Color.White)
                 } else null,
-                modifier = Modifier.size(72.dp)
+                modifier = Modifier.size(48.dp)
             )
         }
     }
