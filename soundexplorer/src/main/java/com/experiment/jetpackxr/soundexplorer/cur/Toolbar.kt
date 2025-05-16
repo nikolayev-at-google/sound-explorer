@@ -15,6 +15,7 @@
  */
 package com.experiment.jetpackxr.soundexplorer.cur
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -25,9 +26,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -37,8 +35,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.experiment.jetpackxr.soundexplorer.R
 
 
 // Enum to represent the different states of the toolbar
@@ -59,7 +59,8 @@ fun CustomToolbar(
     modifier: Modifier = Modifier,
     toolbarState: ToolbarState = ToolbarState.ENABLED,
     onRefreshClick: () -> Unit,
-    onPauseClick: () -> Unit
+    onPauseClick: () -> Unit,
+    onPlayClick: () -> Unit
 ) {
     val isEnabled = toolbarState == ToolbarState.ENABLED
 
@@ -102,7 +103,7 @@ fun CustomToolbar(
         // Refresh Button
         CustomIconButton(
             onClick = onRefreshClick,
-            icon = Icons.Filled.Refresh,
+            iconId = R.drawable.ic_restart,
             contentDescription = "Refresh",
             isEnabled = isEnabled,
             visualState = refreshButtonVisualState,
@@ -114,7 +115,7 @@ fun CustomToolbar(
         // Pause Button
         CustomIconButton(
             onClick = onPauseClick,
-            icon = Icons.Filled.Add,
+            iconId = R.drawable.ic_play, // R.drawable.ic_pause
             contentDescription = "Pause",
             isEnabled = isEnabled,
             visualState = pauseButtonVisualState,
@@ -128,7 +129,7 @@ fun CustomToolbar(
 @Composable
 private fun CustomIconButton(
     onClick: () -> Unit,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    @DrawableRes iconId: Int,
     contentDescription: String,
     isEnabled: Boolean,
     visualState: ButtonVisualState,
@@ -152,7 +153,7 @@ private fun CustomIconButton(
         interactionSource = interactionSource
     ) {
         Icon(
-            imageVector = icon,
+            painter = painterResource(id = iconId),
             contentDescription = contentDescription,
             tint = iconColor,
             modifier = Modifier.size(28.dp) // Adjust icon size as needed
@@ -169,7 +170,8 @@ fun EnabledToolbarPreview() {
     CustomToolbar(
         toolbarState = ToolbarState.ENABLED,
         onRefreshClick = { /*TODO*/ },
-        onPauseClick = { /*TODO*/ }
+        onPauseClick = { /*TODO*/ },
+        onPlayClick = {}
     )
 }
 
@@ -179,7 +181,8 @@ fun DisabledToolbarPreview() {
     CustomToolbar(
         toolbarState = ToolbarState.DISABLED,
         onRefreshClick = { /*TODO*/ },
-        onPauseClick = { /*TODO*/ }
+        onPauseClick = { /*TODO*/ },
+        onPlayClick = {}
     )
 }
 
@@ -201,7 +204,7 @@ fun HoveredRefreshButtonPreview() {
     ) {
         CustomIconButton(
             onClick = { },
-            icon = Icons.Filled.Refresh,
+            iconId = R.drawable.ic_restart,
             contentDescription = "Refresh",
             isEnabled = true,
             visualState = ButtonVisualState.HOVERED, // Force hover state
@@ -211,7 +214,7 @@ fun HoveredRefreshButtonPreview() {
         )
         CustomIconButton( // Keep the other button normal for context
             onClick = { },
-            icon = Icons.Filled.Add,
+            iconId = R.drawable.ic_play,
             contentDescription = "Pause",
             isEnabled = true,
             visualState = ButtonVisualState.NORMAL,
@@ -235,7 +238,7 @@ fun PressedPauseButtonPreview() {
     ) {
         CustomIconButton( // Keep the other button normal for context
             onClick = { },
-            icon = Icons.Filled.Refresh,
+            iconId = R.drawable.ic_restart,
             contentDescription = "Refresh",
             isEnabled = true,
             visualState = ButtonVisualState.NORMAL,
@@ -245,7 +248,7 @@ fun PressedPauseButtonPreview() {
         )
         CustomIconButton(
             onClick = { },
-            icon = Icons.Filled.Add,
+            iconId = R.drawable.ic_pause,
             contentDescription = "Pause",
             isEnabled = true,
             visualState = ButtonVisualState.PRESSED, // Force pressed state
