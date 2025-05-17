@@ -105,7 +105,8 @@ class MainActivity : ComponentActivity() {
 
         this.soundObjects = createSoundObjects(GlbModel.allGlbAnimatedModels.toTypedArray())
 
-        for (i in soundObjects!!.indices) {
+        val loadSound = {
+            i: Int ->
             soundObjects!![i].lowSoundId = checkNotNull(viewModel.soundManager.loadSound(
                 session,
                 soundObjects!![i].entity,
@@ -117,6 +118,18 @@ class MainActivity : ComponentActivity() {
                 soundResources[i].highSoundResourceId
             ))
         }
+
+        // Sounds are loaded and played in a specific order to prioritize the relative
+        // synchronization of more syncopated sounds.
+        loadSound(GlbModel.modelIndices[GlbModel.Cello]!!)      // -4 (harp)
+        loadSound(GlbModel.modelIndices[GlbModel.Pillowtri]!!)  // -3 (bass)
+        loadSound(GlbModel.modelIndices[GlbModel.Swirlnut]!!)   // -2 (rhythmic bass)
+        loadSound(GlbModel.modelIndices[GlbModel.Pumpod]!!)     // -1 (sticks)
+        loadSound(GlbModel.modelIndices[GlbModel.Bloomspire]!!) //  0 (drums) [best sync on average]
+        loadSound(GlbModel.modelIndices[GlbModel.Squube]!!)     // +1 (shaker)
+        loadSound(GlbModel.modelIndices[GlbModel.Munchkin]!!)   // +2 (rhythmic voices)
+        loadSound(GlbModel.modelIndices[GlbModel.Twistbud]!!)   // +3 (melody)
+        loadSound(GlbModel.modelIndices[GlbModel.Pluff]!!)      // +4 (chimes)
 
         val startTimeToPlaySounds = System.nanoTime()
 

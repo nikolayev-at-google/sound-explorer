@@ -217,7 +217,7 @@ class SoundObjectComponent(
             session.activity.mainExecutor,
             SoundEntityMovementHandler(
                 this,
-                heightToChangeSound = 0.4f)))
+                heightToChangeSound = 0.3f)))
 
         gltfModelEntity.addComponent(InteractableComponent.create(
             session,
