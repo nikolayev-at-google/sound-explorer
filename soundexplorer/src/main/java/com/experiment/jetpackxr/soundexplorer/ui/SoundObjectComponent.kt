@@ -123,6 +123,8 @@ class SoundObjectComponent(
             this.onPropertyChanged?.invoke()
         }
 
+    var onMovementStarted : (() -> Unit)? = null
+
     fun play() {
         this.isPlaying = true
         this.composition.updateSoundObjectPlayback(this)
@@ -226,7 +228,8 @@ class SoundObjectComponent(
                 e,
                 linearAcceleration = 2.0f,
                 deadZone = 0.02f,
-                onInputEventBubble = tapHandler)))
+                onInputEventBubble = tapHandler,
+                onMovementStarted =  { onMovementStarted?.invoke() } )))
 
         this.isInitialized = true
     }

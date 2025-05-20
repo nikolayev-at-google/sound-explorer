@@ -17,7 +17,6 @@ package com.experiment.jetpackxr.soundexplorer.cur
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
-import androidx.xr.runtime.math.Pose
 import com.experiment.jetpackxr.soundexplorer.R
 import com.experiment.jetpackxr.soundexplorer.sound.SoundComposition
 import com.experiment.jetpackxr.soundexplorer.sound.SoundManager
@@ -34,9 +33,6 @@ class MainViewModel @Inject constructor(
     // UI state to track if the dialog is showing
     private val _isDialogHidden = MutableStateFlow(true)
     val isDialogHidden = _isDialogHidden.asStateFlow()
-
-    private val _toolbarPose = MutableStateFlow(Pose())
-    val toolbarPose = _toolbarPose.asStateFlow()
 
     class DeleteAll(val value: Boolean = false)
     private val _deleteAll = MutableStateFlow(DeleteAll())
@@ -64,6 +60,9 @@ class MainViewModel @Inject constructor(
     )
 
     var menuListener: MenuListener? = null
+
+    // show tutorial arrow only once
+    var isArrowVisible: Boolean = true
 
     interface MenuListener {
         fun onShapeClick(shapeIndex: Int)
@@ -93,10 +92,6 @@ class MainViewModel @Inject constructor(
     /** Action to show dialog */
     fun toggleDialogVisibility() {
         _isDialogHidden.value = !_isDialogHidden.value
-    }
-
-    fun setToolbarPose(pose: Pose) {
-        _toolbarPose.value = pose
     }
 
     fun deleteAll() {

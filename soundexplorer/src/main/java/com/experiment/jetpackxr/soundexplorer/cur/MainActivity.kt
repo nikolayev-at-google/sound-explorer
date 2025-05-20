@@ -15,9 +15,16 @@
  */
 package com.experiment.jetpackxr.soundexplorer.cur
 
+import android.animation.Animator
+import android.animation.AnimatorInflater
+import android.animation.AnimatorListenerAdapter
+import android.animation.AnimatorSet
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.widget.ImageView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -40,10 +47,12 @@ import androidx.xr.compose.subspace.layout.offset
 import androidx.xr.compose.subspace.layout.rotate
 import androidx.xr.compose.subspace.layout.width
 import androidx.xr.runtime.Config
+import androidx.xr.runtime.Session
 import androidx.xr.runtime.math.Pose
 import androidx.xr.runtime.math.Quaternion
 import androidx.xr.runtime.math.Vector3
-import androidx.xr.runtime.Session
+import androidx.xr.scenecore.PanelEntity
+import androidx.xr.scenecore.PixelDimensions
 import androidx.xr.scenecore.scene
 import com.experiment.jetpackxr.soundexplorer.R
 import com.experiment.jetpackxr.soundexplorer.core.GlbModel
@@ -53,7 +62,6 @@ import com.experiment.jetpackxr.soundexplorer.ui.theme.LocalSpacing
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.getValue
 
 
 @AndroidEntryPoint
@@ -82,6 +90,10 @@ class MainActivity : ComponentActivity() {
         SoundObjectSoundResources(lowSoundResourceId = R.raw.inst08_high, highSoundResourceId = R.raw.inst08_mid),
         SoundObjectSoundResources(lowSoundResourceId = R.raw.inst09_low, highSoundResourceId = R.raw.inst09_high)
     )
+
+    private lateinit var arrowPanel: PanelEntity
+    private lateinit var arrowAnimation: AnimatorSet
+    private lateinit var timeoutHandler: Handler
 
     fun createSoundObjects(
         glbModels : Array<GlbModel>
@@ -158,6 +170,9 @@ class MainActivity : ComponentActivity() {
         session.scene.mainPanelEntity.setHidden(true)
         session.configure(Config(headTracking = Config.HeadTrackingMode.Enabled))
 
+        // Initialize timeout handler
+        timeoutHandler = Handler(Looper.getMainLooper())
+
         lifecycleScope.launch { initializeSoundsAndCreateObjects() }
 
         setContent {
@@ -204,6 +219,24 @@ class MainActivity : ComponentActivity() {
                 soundObject.setPose(initialLocation)
                 soundObject.hidden = false
                 soundObject.play()
+
+                if (viewModel.isArrowVisible) {
+                    viewModel.isArrowVisible = false
+                    soundObject.onMovementStarted = {
+                        arrowPanel.setHidden(true)
+                    }
+
+                    arrowPanel.setHidden(false)
+                    arrowPanel.setParent(soundObject.entity)
+                    arrowPanel.setPose(arrowPanel.getPose().translate(Vector3.Up * 0.15f))
+
+                    timeoutHandler.postDelayed({
+                        arrowPanel.setHidden(true)
+                    }, 10000)
+                    // Start the animation
+                    arrowAnimation.start()
+                }
+
             }
             override fun onRecallClick(shapeIndex: Int) {
                 val soundObject = checkNotNull(soundObjects)[shapeIndex]
@@ -224,6 +257,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        initArrowPanel()
     }
 
     override fun onPause() {
@@ -238,5 +273,39 @@ class MainActivity : ComponentActivity() {
         if (playOnResume) {
             viewModel.soundComposition.play()
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Cancel animation when activity is destroyed
+        arrowAnimation.removeAllListeners()
+        arrowAnimation.cancel()
+    }
+
+    private fun initArrowPanel() {
+        val arrowView = layoutInflater.inflate(R.layout.arrow, null, false)
+        val imageView : ImageView = arrowView.findViewById(R.id.animated_image)
+        arrowPanel =
+            PanelEntity.create(
+                session = session,
+                view = arrowView,
+                pixelDimensions = PixelDimensions(220, 350),
+                name = "Arrow",
+                pose = Pose(Vector3(0f, 0f, 0f)),
+            )
+
+        arrowPanel.setHidden(true)
+        // Load the animation
+        arrowAnimation =
+            AnimatorInflater.loadAnimator(this, R.animator.arrow_animation) as AnimatorSet
+        arrowAnimation.setTarget(imageView)
+
+        // Add listener to restart animation when it ends
+        arrowAnimation.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                // Restart the animation when it ends
+                arrowAnimation.start()
+            }
+        })
     }
 }
