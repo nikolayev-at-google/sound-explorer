@@ -228,13 +228,16 @@ class MainActivity : ComponentActivity() {
 
                     arrowPanel.setHidden(false)
                     arrowPanel.setParent(soundObject.entity)
+                    arrowPanel.setScale(0.75f)
                     arrowPanel.setPose(arrowPanel.getPose().translate(Vector3.Up * 0.15f))
 
                     timeoutHandler.postDelayed({
                         arrowPanel.setHidden(true)
                     }, 10000)
-                    // Start the animation
-                    arrowAnimation.start()
+                    timeoutHandler.postDelayed({
+                        // Start the animation
+                        arrowAnimation.start()
+                    }, 700)
                 }
 
             }
