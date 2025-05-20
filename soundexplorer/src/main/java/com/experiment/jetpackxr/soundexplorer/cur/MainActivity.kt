@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -46,6 +47,11 @@ import androidx.xr.compose.subspace.layout.movable
 import androidx.xr.compose.subspace.layout.offset
 import androidx.xr.compose.subspace.layout.rotate
 import androidx.xr.compose.subspace.layout.width
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.LaunchedEffect
+import androidx.xr.compose.subspace.layout.alpha
+import androidx.xr.compose.subspace.layout.scale
 import androidx.xr.runtime.Config
 import androidx.xr.runtime.Session
 import androidx.xr.runtime.math.Pose
@@ -58,6 +64,7 @@ import com.experiment.jetpackxr.soundexplorer.R
 import com.experiment.jetpackxr.soundexplorer.core.GlbModel
 import com.experiment.jetpackxr.soundexplorer.core.GlbModelRepository
 import com.experiment.jetpackxr.soundexplorer.ui.SoundObjectComponent
+import com.experiment.jetpackxr.soundexplorer.ui.SplashScreen
 import com.experiment.jetpackxr.soundexplorer.ui.theme.LocalSpacing
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -179,6 +186,30 @@ class MainActivity : ComponentActivity() {
 
             Subspace {
                 val isDialogHidden = viewModel.isDialogHidden.collectAsState()
+                val alpha = remember { Animatable(0f) }
+                var startFadeIn by remember { mutableStateOf(false) }
+
+                LaunchedEffect(startFadeIn && soundObjectsReady) {
+                    if (startFadeIn && soundObjectsReady) {
+                        alpha.animateTo(
+                            targetValue = 1f,
+                            animationSpec = tween(durationMillis = 900)
+                        )
+                    }
+                }
+
+                SpatialPanel(
+                    modifier = SubspaceModifier
+                        .width(200.dp)
+                        .height(200.dp)
+                        .offset(z = 200.dp)
+                ) {
+                    SplashScreen(
+                        onFadeOut = { startFadeIn = true },
+                        onFinished = {  },
+                        contentLoaded = soundObjectsReady
+                    )
+                }
 
                 SpatialPanel(
                     modifier = SubspaceModifier
@@ -186,6 +217,7 @@ class MainActivity : ComponentActivity() {
                         .height(190.dp)
                         .offset(z = 200.dp, y = (-200).dp)
                         .rotate(-20f,0f,0f)
+                        .alpha(alpha = alpha.value)
                 ) {
                     ShapeAppScreen(contentLoaded = soundObjectsReady)
                 }

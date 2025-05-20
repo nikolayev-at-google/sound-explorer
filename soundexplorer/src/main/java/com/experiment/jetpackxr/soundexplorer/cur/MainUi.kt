@@ -48,8 +48,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
@@ -57,14 +55,11 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import com.experiment.jetpackxr.soundexplorer.R
-import com.experiment.jetpackxr.soundexplorer.ui.SplashScreen
 import com.experiment.jetpackxr.soundexplorer.ui.theme.LocalSpacing
 
 
@@ -77,23 +72,6 @@ fun ShapeAppScreen(
     Box(
         modifier = Modifier.fillMaxWidth()
     ) {
-        val alpha = remember { Animatable(0f) }
-        var startFadeIn by remember { mutableStateOf(false) }
-
-        SplashScreen(
-            onFadeOut = { startFadeIn = true },
-            onFinished = {  },
-            contentLoaded
-        )
-
-        LaunchedEffect(startFadeIn && contentLoaded) {
-            if (startFadeIn && contentLoaded) {
-                alpha.animateTo(
-                    targetValue = 1f,
-                    animationSpec = tween(durationMillis = 800)
-                )
-            }
-        }
 
         // Shape options at the top
         ShapeOptions(
@@ -104,7 +82,6 @@ fun ShapeAppScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = LocalSpacing.current.xxxxl)
-                .graphicsLayer(alpha = alpha.value)
         )
 
         // Main navigation panel at the bottom
@@ -135,7 +112,6 @@ fun ShapeAppScreen(
             onPlayClick = onClickFunc,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .graphicsLayer(alpha = alpha.value)
         )
     }
 }
