@@ -24,7 +24,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.widget.ImageView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -51,7 +50,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.LaunchedEffect
 import androidx.xr.compose.subspace.layout.alpha
-import androidx.xr.compose.subspace.layout.scale
 import androidx.xr.runtime.Config
 import androidx.xr.runtime.Session
 import androidx.xr.runtime.math.Pose
@@ -98,8 +96,10 @@ class MainActivity : ComponentActivity() {
         SoundObjectSoundResources(lowSoundResourceId = R.raw.inst09_low, highSoundResourceId = R.raw.inst09_high)
     )
 
-    private lateinit var arrowPanel: PanelEntity
-    private lateinit var arrowAnimation: AnimatorSet
+    private lateinit var arrowTopPanel: PanelEntity
+    private lateinit var topArrowAnimation: AnimatorSet
+    private lateinit var arrowBottomPanel: PanelEntity
+    private lateinit var bottomArrowAnimation: AnimatorSet
     private lateinit var timeoutHandler: Handler
 
     fun createSoundObjects(
@@ -255,20 +255,32 @@ class MainActivity : ComponentActivity() {
                 if (viewModel.isArrowVisible) {
                     viewModel.isArrowVisible = false
                     soundObject.onMovementStarted = {
-                        arrowPanel.setHidden(true)
+                        arrowTopPanel.setHidden(true)
+                        arrowBottomPanel.setHidden(true)
                     }
 
-                    arrowPanel.setHidden(false)
-                    arrowPanel.setParent(soundObject.entity)
-                    arrowPanel.setScale(0.75f)
-                    arrowPanel.setPose(arrowPanel.getPose().translate(Vector3.Up * 0.15f))
+                    with(arrowTopPanel) {
+                        setHidden(false)
+                        setParent(soundObject.entity)
+                        setScale(0.5f)
+                        setPose(getPose().translate(Vector3.Up * 0.1f))
+                    }
+                    with(arrowBottomPanel) {
+                        setHidden(false)
+                        setParent(soundObject.entity)
+                        setScale(0.5f)
+                        setPose(getPose().translate(Vector3.Down * 0.1f))
+                    }
+
 
                     timeoutHandler.postDelayed({
-                        arrowPanel.setHidden(true)
+                        arrowTopPanel.setHidden(true)
+                        arrowBottomPanel.setHidden(true)
                     }, 10000)
                     timeoutHandler.postDelayed({
                         // Start the animation
-                        arrowAnimation.start()
+                        topArrowAnimation.start()
+                        bottomArrowAnimation.start()
                     }, 700)
                 }
 
@@ -313,33 +325,55 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         // Cancel animation when activity is destroyed
-        arrowAnimation.removeAllListeners()
-        arrowAnimation.cancel()
+        topArrowAnimation.removeAllListeners()
+        topArrowAnimation.cancel()
     }
 
     private fun initArrowPanel() {
-        val arrowView = layoutInflater.inflate(R.layout.arrow, null, false)
-        val imageView : ImageView = arrowView.findViewById(R.id.animated_image)
-        arrowPanel =
+        val topArrowView = layoutInflater.inflate(R.layout.top_arrow, null, false)
+        val bottomArrowView = layoutInflater.inflate(R.layout.bottom_arrow, null, false)
+        arrowTopPanel =
             PanelEntity.create(
                 session = session,
-                view = arrowView,
+                view = topArrowView,
                 pixelDimensions = PixelDimensions(220, 350),
-                name = "Arrow",
+                name = "Top Arrow",
                 pose = Pose(Vector3(0f, 0f, 0f)),
             )
+        arrowTopPanel.setHidden(true)
+        arrowBottomPanel =
+            PanelEntity.create(
+                session = session,
+                view = bottomArrowView,
+                pixelDimensions = PixelDimensions(220, 350),
+                name = "Bottom Arrow",
+                pose = Pose(Vector3(0f, 0f, 0f)),
+            )
+        arrowBottomPanel.setHidden(true)
 
-        arrowPanel.setHidden(true)
         // Load the animation
-        arrowAnimation =
-            AnimatorInflater.loadAnimator(this, R.animator.arrow_animation) as AnimatorSet
-        arrowAnimation.setTarget(imageView)
+        topArrowAnimation =
+            AnimatorInflater.loadAnimator(this, R.animator.top_arrow_animation) as AnimatorSet
+        topArrowAnimation.setTarget(
+            topArrowView.findViewById(R.id.animated_image)
+        )
+        bottomArrowAnimation =
+            AnimatorInflater.loadAnimator(this, R.animator.bottom_arrow_animation) as AnimatorSet
+        bottomArrowAnimation.setTarget(
+            bottomArrowView.findViewById(R.id.animated_image)
+        )
 
         // Add listener to restart animation when it ends
-        arrowAnimation.addListener(object : AnimatorListenerAdapter() {
+        topArrowAnimation.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator) {
                 // Restart the animation when it ends
-                arrowAnimation.start()
+                topArrowAnimation.start()
+            }
+        })
+        bottomArrowAnimation.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                // Restart the animation when it ends
+                bottomArrowAnimation.start()
             }
         })
     }
