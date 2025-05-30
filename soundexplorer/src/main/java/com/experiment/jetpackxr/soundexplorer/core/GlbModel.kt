@@ -15,16 +15,22 @@
  */
 package com.experiment.jetpackxr.soundexplorer.core
 
-sealed class GlbModel(val assetName: String) {
-    object Pumpod : GlbModel("glb/pumpod_animated.glb")
-    object Pluff : GlbModel("glb/pluff_animated.glb")
-    object Pillowtri : GlbModel("glb/pillowtri_animated.glb")
-    object Swirlnut : GlbModel("glb/swirlnut_animated.glb")
-    object Twistbud : GlbModel("glb/twistbud_animated.glb")
-    object Squube : GlbModel("glb/squube_animated.glb")
-    object Bloomspire : GlbModel("glb/bloomspire_animated.glb")
-    object Cello : GlbModel("glb/cello_animated.glb")
-    object Munchkin : GlbModel("glb/munchkin_animated.glb")
+import com.experiment.jetpackxr.soundexplorer.R
+
+sealed class GlbModel(
+    val assetName: String,
+    val lowSoundResourceId: Int,
+    val highSoundResourceId: Int
+) {
+    object Pumpod : GlbModel("glb/pumpod_animated.glb", R.raw.inst01_high, R.raw.inst01_low)
+    object Pluff : GlbModel("glb/pluff_animated.glb", R.raw.inst02_mid, R.raw.inst02_high)
+    object Pillowtri : GlbModel("glb/pillowtri_animated.glb", R.raw.inst03_high, R.raw.inst03_low)
+    object Swirlnut : GlbModel("glb/swirlnut_animated.glb", R.raw.inst04_low, R.raw.inst04_high)
+    object Twistbud : GlbModel("glb/twistbud_animated.glb", R.raw.inst05_high, R.raw.inst05_mid)
+    object Squube : GlbModel("glb/squube_animated.glb", R.raw.inst06_high, R.raw.inst06_low)
+    object Bloomspire : GlbModel("glb/bloomspire_animated.glb", R.raw.inst07_low, R.raw.inst07_mid)
+    object Cello : GlbModel("glb/cello_animated.glb", R.raw.inst08_high, R.raw.inst08_mid)
+    object Munchkin : GlbModel("glb/munchkin_animated.glb", R.raw.inst09_low, R.raw.inst09_high)
 
     companion object {
         val allGlbAnimatedModels = listOf(

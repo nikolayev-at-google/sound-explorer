@@ -14,8 +14,8 @@ android {
         applicationId = "com.experiment.jetpackxr.soundexplorer"
         minSdk = 34
         targetSdk = 35
-        versionCode = 101
-        versionName = "0.1.1"
+        versionCode = 102
+        versionName = "0.1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -86,6 +86,9 @@ dependencies {
     testImplementation(libs.androidx.compose.testing)
     testImplementation(libs.androidx.runtime.testing)
     testImplementation(libs.robolectric)
+    testImplementation("org.mockito:mockito-core:5.10.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
 
     // Testing
     androidTestImplementation(libs.junit)

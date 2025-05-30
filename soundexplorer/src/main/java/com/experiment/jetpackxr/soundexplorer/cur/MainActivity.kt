@@ -15,14 +15,8 @@
  */
 package com.experiment.jetpackxr.soundexplorer.cur
 
-import android.animation.Animator
-import android.animation.AnimatorInflater
-import android.animation.AnimatorListenerAdapter
-import android.animation.AnimatorSet
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -55,12 +49,11 @@ import androidx.xr.runtime.Session
 import androidx.xr.runtime.math.Pose
 import androidx.xr.runtime.math.Quaternion
 import androidx.xr.runtime.math.Vector3
-import androidx.xr.scenecore.PanelEntity
-import androidx.xr.scenecore.PixelDimensions
 import androidx.xr.scenecore.scene
-import com.experiment.jetpackxr.soundexplorer.R
 import com.experiment.jetpackxr.soundexplorer.core.GlbModel
 import com.experiment.jetpackxr.soundexplorer.core.GlbModelRepository
+import com.experiment.jetpackxr.soundexplorer.ui.ArrowPanelController
+import com.experiment.jetpackxr.soundexplorer.ui.RestartDialogContent
 import com.experiment.jetpackxr.soundexplorer.ui.SoundObjectComponent
 import com.experiment.jetpackxr.soundexplorer.ui.SplashScreen
 import com.experiment.jetpackxr.soundexplorer.ui.theme.LocalSpacing
@@ -73,37 +66,21 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
 
     @Inject
-    lateinit var modelRepository : GlbModelRepository
+    lateinit var modelRepository: GlbModelRepository
+
     @Inject
-    lateinit var session : Session
-    private val viewModel : MainViewModel by viewModels()
+    lateinit var session: Session
+
+    @Inject
+    lateinit var arrowPanelController: ArrowPanelController
+    private val viewModel: MainViewModel by viewModels()
     private var soundObjects: Array<SoundObjectComponent>? = null
     private var playOnResume: Boolean = false
     private var soundObjectsReady: Boolean by mutableStateOf(false)
 
-    data class SoundObjectSoundResources (val lowSoundResourceId: Int, val highSoundResourceId: Int)
-
-    // Note that high and low sound selections are intentional. Do not change sound assignments.
-    private val soundResources = arrayOf(
-        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst01_high, highSoundResourceId = R.raw.inst01_low),
-        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst02_mid, highSoundResourceId = R.raw.inst02_high),
-        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst03_high, highSoundResourceId = R.raw.inst03_low),
-        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst04_low, highSoundResourceId = R.raw.inst04_high),
-        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst05_high, highSoundResourceId = R.raw.inst05_mid),
-        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst06_high, highSoundResourceId = R.raw.inst06_low),
-        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst07_low, highSoundResourceId = R.raw.inst07_mid),
-        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst08_high, highSoundResourceId = R.raw.inst08_mid),
-        SoundObjectSoundResources(lowSoundResourceId = R.raw.inst09_low, highSoundResourceId = R.raw.inst09_high)
-    )
-
-    private lateinit var arrowTopPanel: PanelEntity
-    private lateinit var topArrowAnimation: AnimatorSet
-    private lateinit var arrowBottomPanel: PanelEntity
-    private lateinit var bottomArrowAnimation: AnimatorSet
-    private lateinit var timeoutHandler: Handler
 
     fun createSoundObjects(
-        glbModels : Array<GlbModel>
+        glbModels: Array<GlbModel>
     ): Array<SoundObjectComponent> {
         val soundObjs = Array<SoundObjectComponent?>(checkNotNull(glbModels).size) { null }
         for (i in soundObjs.indices) {
@@ -112,7 +89,8 @@ class MainActivity : ComponentActivity() {
                 modelRepository,
                 glbModels[i],
                 viewModel.soundComposition,
-                lifecycleScope)
+                lifecycleScope
+            )
         }
         return soundObjs.map { o -> checkNotNull(o) }.toTypedArray()
     }
@@ -124,31 +102,30 @@ class MainActivity : ComponentActivity() {
 
         this.soundObjects = createSoundObjects(GlbModel.allGlbAnimatedModels.toTypedArray())
 
-        val loadSound = {
-            i: Int ->
-            soundObjects!![i].lowSoundId = checkNotNull(viewModel.soundManager.loadSound(
-                session,
-                soundObjects!![i].entity,
-                soundResources[i].lowSoundResourceId
-            ))
-            soundObjects!![i].highSoundId = checkNotNull(viewModel.soundManager.loadSound(
-                session,
-                soundObjects!![i].entity,
-                soundResources[i].highSoundResourceId
-            ))
+        val loadSound = { i: Int ->
+            val model = GlbModel.allGlbAnimatedModels[i]
+            soundObjects!![i].lowSoundId = checkNotNull(
+                viewModel.soundManager.loadSound(
+                    session,
+                    soundObjects!![i].entity,
+                    model.lowSoundResourceId
+                )
+            )
+            soundObjects!![i].highSoundId = checkNotNull(
+                viewModel.soundManager.loadSound(
+                    session,
+                    soundObjects!![i].entity,
+                    model.highSoundResourceId
+                )
+            )
         }
 
         // Sounds are loaded and played in a specific order to prioritize the relative
         // synchronization of more syncopated sounds.
-        loadSound(GlbModel.modelIndices[GlbModel.Cello]!!)      // -4 (harp)
-        loadSound(GlbModel.modelIndices[GlbModel.Pillowtri]!!)  // -3 (bass)
-        loadSound(GlbModel.modelIndices[GlbModel.Swirlnut]!!)   // -2 (rhythmic bass)
-        loadSound(GlbModel.modelIndices[GlbModel.Pumpod]!!)     // -1 (sticks)
-        loadSound(GlbModel.modelIndices[GlbModel.Bloomspire]!!) //  0 (drums) [best sync on average]
-        loadSound(GlbModel.modelIndices[GlbModel.Squube]!!)     // +1 (shaker)
-        loadSound(GlbModel.modelIndices[GlbModel.Munchkin]!!)   // +2 (rhythmic voices)
-        loadSound(GlbModel.modelIndices[GlbModel.Twistbud]!!)   // +3 (melody)
-        loadSound(GlbModel.modelIndices[GlbModel.Pluff]!!)      // +4 (chimes)
+        // The order is based on the modelIndices map in GlbModel.kt
+        GlbModel.modelIndices.entries.sortedBy { it.value }.forEach { entry ->
+            loadSound(GlbModel.allGlbAnimatedModels.indexOf(entry.key))
+        }
 
         val startTimeToPlaySounds = System.nanoTime()
 
@@ -177,9 +154,6 @@ class MainActivity : ComponentActivity() {
         session.scene.mainPanelEntity.setHidden(true)
         session.configure(Config(headTracking = Config.HeadTrackingMode.Enabled))
 
-        // Initialize timeout handler
-        timeoutHandler = Handler(Looper.getMainLooper())
-
         lifecycleScope.launch { initializeSoundsAndCreateObjects() }
 
         setContent {
@@ -206,7 +180,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     SplashScreen(
                         onFadeOut = { startFadeIn = true },
-                        onFinished = {  },
+                        onFinished = { },
                         contentLoaded = soundObjectsReady
                     )
                 }
@@ -216,10 +190,10 @@ class MainActivity : ComponentActivity() {
                         .width(1000.dp)
                         .height(190.dp)
                         .offset(z = 200.dp, y = (-200).dp)
-                        .rotate(-20f,0f,0f)
+                        .rotate(-20f, 0f, 0f)
                         .alpha(alpha = alpha.value)
                 ) {
-                    ShapeAppScreen(contentLoaded = soundObjectsReady)
+                    ShapeAppScreen()
                 }
 
                 if (!isDialogHidden.value) {
@@ -245,7 +219,8 @@ class MainActivity : ComponentActivity() {
             override fun onShapeClick(shapeIndex: Int) {
                 val initialLocation = checkNotNull(session.scene.spatialUser.head).transformPoseTo(
                     Pose(Vector3.Forward * 1.0f, Quaternion.Identity),
-                    session.scene.activitySpace)
+                    session.scene.activitySpace
+                )
 
                 val soundObject = checkNotNull(soundObjects)[shapeIndex]
                 soundObject.setPose(initialLocation)
@@ -254,37 +229,21 @@ class MainActivity : ComponentActivity() {
 
                 if (viewModel.isArrowVisible) {
                     viewModel.isArrowVisible = false
-                    soundObject.onMovementStarted = {
-                        arrowTopPanel.setHidden(true)
-                        arrowBottomPanel.setHidden(true)
+                    arrowPanelController.showArrows(soundObject.entity) {
+                        // This callback can be used if SoundObjectComponent needs to inform ArrowPanelController about movement.
+                        // For now, direct hiding from ArrowPanelController's timeout or other logic.
                     }
-
-                    with(arrowTopPanel) {
-                        setHidden(false)
-                        setParent(soundObject.entity)
-                        setScale(0.5f)
-                        setPose(getPose().translate(Vector3.Up * 0.1f))
-                    }
-                    with(arrowBottomPanel) {
-                        setHidden(false)
-                        setParent(soundObject.entity)
-                        setScale(0.5f)
-                        setPose(getPose().translate(Vector3.Down * 0.1f))
-                    }
-
-
-                    timeoutHandler.postDelayed({
-                        arrowTopPanel.setHidden(true)
-                        arrowBottomPanel.setHidden(true)
-                    }, 10000)
-                    timeoutHandler.postDelayed({
-                        // Start the animation
-                        topArrowAnimation.start()
-                        bottomArrowAnimation.start()
-                    }, 700)
+                    // The onMovementStarted logic from the original code is now partially handled within showArrows (timeout)
+                    // and via direct calls to hideArrows if needed from other parts of the app.
+                    // If SoundObjectComponent has specific movement detection, it could call arrowPanelController.hideArrows()
+                    soundObject.onMovementStarted =
+                        { // This is if the sound object itself detects movement and needs to hide arrows
+                            arrowPanelController.hideArrows()
+                        }
                 }
 
             }
+
             override fun onRecallClick(shapeIndex: Int) {
                 val soundObject = checkNotNull(soundObjects)[shapeIndex]
                 soundObject.stop()
@@ -305,7 +264,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        initArrowPanel()
     }
 
     override fun onPause() {
@@ -324,57 +282,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Cancel animation when activity is destroyed
-        topArrowAnimation.removeAllListeners()
-        topArrowAnimation.cancel()
-    }
-
-    private fun initArrowPanel() {
-        val topArrowView = layoutInflater.inflate(R.layout.top_arrow, null, false)
-        val bottomArrowView = layoutInflater.inflate(R.layout.bottom_arrow, null, false)
-        arrowTopPanel =
-            PanelEntity.create(
-                session = session,
-                view = topArrowView,
-                pixelDimensions = PixelDimensions(220, 350),
-                name = "Top Arrow",
-                pose = Pose(Vector3(0f, 0f, 0f)),
-            )
-        arrowTopPanel.setHidden(true)
-        arrowBottomPanel =
-            PanelEntity.create(
-                session = session,
-                view = bottomArrowView,
-                pixelDimensions = PixelDimensions(220, 350),
-                name = "Bottom Arrow",
-                pose = Pose(Vector3(0f, 0f, 0f)),
-            )
-        arrowBottomPanel.setHidden(true)
-
-        // Load the animation
-        topArrowAnimation =
-            AnimatorInflater.loadAnimator(this, R.animator.top_arrow_animation) as AnimatorSet
-        topArrowAnimation.setTarget(
-            topArrowView.findViewById(R.id.animated_image)
-        )
-        bottomArrowAnimation =
-            AnimatorInflater.loadAnimator(this, R.animator.bottom_arrow_animation) as AnimatorSet
-        bottomArrowAnimation.setTarget(
-            bottomArrowView.findViewById(R.id.animated_image)
-        )
-
-        // Add listener to restart animation when it ends
-        topArrowAnimation.addListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: Animator) {
-                // Restart the animation when it ends
-                topArrowAnimation.start()
-            }
-        })
-        bottomArrowAnimation.addListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: Animator) {
-                // Restart the animation when it ends
-                bottomArrowAnimation.start()
-            }
-        })
+        arrowPanelController.destroy()
     }
 }
