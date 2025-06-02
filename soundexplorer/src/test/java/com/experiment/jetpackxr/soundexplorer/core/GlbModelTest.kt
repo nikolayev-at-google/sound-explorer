@@ -15,8 +15,8 @@
  */
 package com.experiment.jetpackxr.soundexplorer.core
 
-import com.experiment.jetpackxr.soundexplorer.R // Import R class for resource IDs
-import org.junit.Assert.assertEquals
+import com.experiment.jetpackxr.soundexplorer.R
+import com.google.common.truth.Truth.*
 import org.junit.Test
 
 class GlbModelTest {
@@ -24,64 +24,65 @@ class GlbModelTest {
     @Test
     fun pumpod_hasCorrectSoundResourceIds() {
         val model = GlbModel.Pumpod
-        assertEquals("Pumpod low sound ID does not match", R.raw.inst01_high, model.lowSoundResourceId)
-        assertEquals("Pumpod high sound ID does not match", R.raw.inst01_low, model.highSoundResourceId)
+        assertWithMessage("Pumpod low sound ID does not match").that(R.raw.inst01_high).isEqualTo(model.lowSoundResourceId)
+        assertWithMessage("Pumpod high sound ID does not match").that(R.raw.inst01_low).isEqualTo(model.highSoundResourceId)
     }
 
     @Test
     fun pluff_hasCorrectSoundResourceIds() {
         val model = GlbModel.Pluff
-        assertEquals("Pluff low sound ID does not match", R.raw.inst02_mid, model.lowSoundResourceId)
-        assertEquals("Pluff high sound ID does not match", R.raw.inst02_high, model.highSoundResourceId)
+        assertWithMessage("Pluff low sound ID does not match").that(R.raw.inst02_mid).isEqualTo(model.lowSoundResourceId)
+        assertWithMessage("Pluff high sound ID does not match").that(R.raw.inst02_high).isEqualTo(model.highSoundResourceId)
     }
 
     @Test
     fun pillowtri_hasCorrectSoundResourceIds() {
         val model = GlbModel.Pillowtri
-        assertEquals("Pillowtri low sound ID does not match", R.raw.inst03_high, model.lowSoundResourceId)
-        assertEquals("Pillowtri high sound ID does not match", R.raw.inst03_low, model.highSoundResourceId)
+        assertWithMessage("Pillowtri low sound ID does not match").that(R.raw.inst03_high).isEqualTo(model.lowSoundResourceId)
+        assertWithMessage("Pillowtri high sound ID does not match").that(R.raw.inst03_low).isEqualTo(model.highSoundResourceId)
     }
 
     @Test
     fun swirlnut_hasCorrectSoundResourceIds() {
         val model = GlbModel.Swirlnut
-        assertEquals("Swirlnut low sound ID does not match", R.raw.inst04_low, model.lowSoundResourceId)
-        assertEquals("Swirlnut high sound ID does not match", R.raw.inst04_high, model.highSoundResourceId)
+        assertWithMessage("Swirlnut low sound ID does not match").that(R.raw.inst04_low).isEqualTo(model.lowSoundResourceId)
+        assertWithMessage("Swirlnut high sound ID does not match").that(R.raw.inst04_high).isEqualTo(model.highSoundResourceId)
     }
 
     @Test
     fun twistbud_hasCorrectSoundResourceIds() {
         val model = GlbModel.Twistbud
-        assertEquals("Twistbud low sound ID does not match", R.raw.inst05_high, model.lowSoundResourceId)
-        assertEquals("Twistbud high sound ID does not match", R.raw.inst05_mid, model.highSoundResourceId)
+        assertWithMessage("Twistbud low sound ID does not match").that(R.raw.inst05_high).isEqualTo(model.lowSoundResourceId)
+        assertWithMessage("Twistbud high sound ID does not match").that(R.raw.inst05_mid).isEqualTo(model.highSoundResourceId)
     }
 
     @Test
     fun squube_hasCorrectSoundResourceIds() {
         val model = GlbModel.Squube
-        assertEquals("Squube low sound ID does not match", R.raw.inst06_high, model.lowSoundResourceId)
-        assertEquals("Squube high sound ID does not match", R.raw.inst06_low, model.highSoundResourceId)
+
+        assertWithMessage("Squube low sound ID does not match").that(R.raw.inst06_high).isEqualTo(model.lowSoundResourceId)
+        assertWithMessage("Squube high sound ID does not match").that(R.raw.inst06_low).isEqualTo(model.highSoundResourceId)
     }
 
     @Test
     fun bloomspire_hasCorrectSoundResourceIds() {
         val model = GlbModel.Bloomspire
-        assertEquals("Bloomspire low sound ID does not match", R.raw.inst07_low, model.lowSoundResourceId)
-        assertEquals("Bloomspire high sound ID does not match", R.raw.inst07_mid, model.highSoundResourceId)
+        assertWithMessage("Bloomspire low sound ID does not match").that(R.raw.inst07_low).isEqualTo(model.lowSoundResourceId)
+        assertWithMessage("Bloomspire high sound ID does not match").that(R.raw.inst07_mid).isEqualTo(model.highSoundResourceId)
     }
 
     @Test
     fun cello_hasCorrectSoundResourceIds() {
         val model = GlbModel.Cello
-        assertEquals("Cello low sound ID does not match", R.raw.inst08_high, model.lowSoundResourceId)
-        assertEquals("Cello high sound ID does not match", R.raw.inst08_mid, model.highSoundResourceId)
+        assertWithMessage("Cello low sound ID does not match").that(R.raw.inst08_high).isEqualTo(model.lowSoundResourceId)
+        assertWithMessage("Cello high sound ID does not match").that(R.raw.inst08_mid).isEqualTo(model.highSoundResourceId)
     }
 
     @Test
     fun munchkin_hasCorrectSoundResourceIds() {
         val model = GlbModel.Munchkin
-        assertEquals("Munchkin low sound ID does not match", R.raw.inst09_low, model.lowSoundResourceId)
-        assertEquals("Munchkin high sound ID does not match", R.raw.inst09_high, model.highSoundResourceId)
+        assertWithMessage("Munchkin low sound ID does not match").that(R.raw.inst09_low).isEqualTo(model.lowSoundResourceId)
+        assertWithMessage("Munchkin high sound ID does not match").that(R.raw.inst09_high).isEqualTo(model.highSoundResourceId)
     }
 
 }

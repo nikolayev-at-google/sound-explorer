@@ -14,8 +14,8 @@ android {
         applicationId = "com.experiment.jetpackxr.soundexplorer"
         minSdk = 34
         targetSdk = 35
-        versionCode = 102
-        versionName = "0.1.2"
+        versionCode = 200
+        versionName = "0.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

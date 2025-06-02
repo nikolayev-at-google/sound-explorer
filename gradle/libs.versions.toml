@@ -105,7 +105,7 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 mockk-agent = { module = "io.mockk:mockk-agent", version.ref = "mockkVersion" }
 mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockkVersion" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
-truth = { module = "com.google.truth:truth", version = "1.0.1" }
+truth = { module = "com.google.truth:truth", version = "1.4.4" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
