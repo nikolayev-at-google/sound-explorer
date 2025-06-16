@@ -152,8 +152,10 @@ class SoundManager @Inject constructor() : Closeable {
         }
     }
 
-    fun setVolume(soundId: Int, volume: Float) {
-        this.audioTracks[soundId].setVolume(volume)
+    fun setVolume(soundId: Int?, volume: Float) {
+        soundId?.let {
+            this.audioTracks[it].setVolume(volume)
+        }
     }
 
     override fun close() {

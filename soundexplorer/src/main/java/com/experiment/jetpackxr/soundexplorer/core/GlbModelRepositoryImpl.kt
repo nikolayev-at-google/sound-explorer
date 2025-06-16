@@ -37,7 +37,7 @@ class GlbModelRepositoryImpl @Inject constructor(
     // Cache for successfully loaded models
     private val loadedModels = ConcurrentHashMap<GlbModel, Model>()
 
-    override suspend fun getOrLoadModel(modelIdentifier: GlbModel): Result<Model> {
+    override suspend fun getOrLoadModel(scope: CoroutineScope, modelIdentifier: GlbModel): Result<Model> {
         // 1. Check memory cache for already loaded models
         loadedModels[modelIdentifier]?.let {
             return Result.success(it)
@@ -46,12 +46,7 @@ class GlbModelRepositoryImpl @Inject constructor(
         // 2. Check cache for ongoing loading jobs
         // computeIfAbsent ensures atomic creation and retrieval of the Deferred job
         val loadingJob = loadingJobs.computeIfAbsent(modelIdentifier) { identifier ->
-
-            // Launch the loading coroutine within the repository's scope (using viewModelScope indirectly via caller)
-            // Or, if Repository is a Singleton, it might need its own CoroutineScope.
-            // Here, we assume the caller (ViewModel) provides the scope.
-            // We use SupervisorJob to prevent one failure from cancelling others if called within a larger scope.
-            CoroutineScope(Dispatchers.Main + SupervisorJob()).async {
+            scope.async {
                 try {
 
                     // Call the actual suspend loading function (extension function assumed)

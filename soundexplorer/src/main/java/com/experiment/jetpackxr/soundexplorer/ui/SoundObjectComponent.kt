@@ -70,8 +70,8 @@ class SoundObjectComponent(
 
     var onPropertyChanged: (() -> Unit)? = null
 
-    var lowSoundId: Int = -1
-    var highSoundId: Int = -1
+    var lowSoundId: Int? = null
+    var highSoundId: Int? = null
 
     var lowSoundVolume: Float = 0.5f
         private set
@@ -166,7 +166,9 @@ class SoundObjectComponent(
 
         val e = checkNotNull(this._entity)
 
-        val gltfModel = modelRepository.getOrLoadModel(glbModel).getOrNull() as GltfModel?
+        val gltfModel = modelRepository
+            .getOrLoadModel(coroutineScope, glbModel)
+            .getOrNull() as GltfModel?
         if (gltfModel == null) {
             throw IllegalArgumentException("Failed to load model " + glbModel.assetName)
         }

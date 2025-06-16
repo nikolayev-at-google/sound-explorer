@@ -43,6 +43,7 @@ import androidx.xr.compose.subspace.layout.width
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.util.fastForEachIndexed
 import androidx.xr.compose.subspace.layout.alpha
 import androidx.xr.runtime.Config
 import androidx.xr.runtime.Session
@@ -104,27 +105,28 @@ class MainActivity : ComponentActivity() {
 
         val loadSound = { i: Int ->
             val model = GlbModel.allGlbAnimatedModels[i]
-            soundObjects!![i].lowSoundId = checkNotNull(
-                viewModel.soundManager.loadSound(
-                    session,
-                    soundObjects!![i].entity,
-                    model.lowSoundResourceId
+            soundObjects?.get(i)?.let { soundObject ->
+                soundObject.lowSoundId = checkNotNull(
+                    viewModel.soundManager.loadSound(
+                        session,
+                        soundObject.entity,
+                        model.lowSoundResourceId
+                    )
                 )
-            )
-            soundObjects!![i].highSoundId = checkNotNull(
-                viewModel.soundManager.loadSound(
-                    session,
-                    soundObjects!![i].entity,
-                    model.highSoundResourceId
+                soundObject.highSoundId = checkNotNull(
+                    viewModel.soundManager.loadSound(
+                        session,
+                        soundObject.entity,
+                        model.highSoundResourceId
+                    )
                 )
-            )
+            }
         }
 
         // Sounds are loaded and played in a specific order to prioritize the relative
         // synchronization of more syncopated sounds.
-        // The order is based on the modelIndices map in GlbModel.kt
-        GlbModel.modelIndices.entries.sortedBy { it.value }.forEach { entry ->
-            loadSound(GlbModel.allGlbAnimatedModels.indexOf(entry.key))
+        GlbModel.allGlbAnimatedModels.fastForEachIndexed { index, glbModel ->
+            loadSound(index)
         }
 
         val startTimeToPlaySounds = System.nanoTime()

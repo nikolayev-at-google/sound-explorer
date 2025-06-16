@@ -16,6 +16,7 @@
 package com.experiment.jetpackxr.soundexplorer.core
 
 import androidx.xr.scenecore.Model
+import kotlinx.coroutines.CoroutineScope
 
 
 /**
@@ -28,11 +29,12 @@ interface GlbModelRepository {
      * Gets a model by its identifier, loading it if necessary.
      * Handles caching and concurrent requests.
      *
+     * @param scope CoroutineScope to launch the loading coroutine.
      * @param modelIdentifier Unique identifier (e.g., asset path "glb/bloomspire_animated.glb").
      * @return Result<Model> containing the loaded Model on success or an exception on failure.
      * @throws RuntimeException on error.
      */
-    suspend fun getOrLoadModel(modelIdentifier: GlbModel): Result<Model>
+    suspend fun getOrLoadModel(scope: CoroutineScope, modelIdentifier: GlbModel): Result<Model>
 
     /**
      * Clears caches and releases resources held by the repository.

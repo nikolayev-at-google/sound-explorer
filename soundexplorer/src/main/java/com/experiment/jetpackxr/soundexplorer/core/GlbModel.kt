@@ -17,6 +17,14 @@ package com.experiment.jetpackxr.soundexplorer.core
 
 import com.experiment.jetpackxr.soundexplorer.R
 
+
+/**
+ * Class representing different GLB models with their associated properties.
+ *
+ * @param assetName model file name
+ * @param lowSoundResourceId sound to play if model is below imaginary midline
+ * @param highSoundResourceId sound to play if model is above imaginary midline
+ */
 sealed class GlbModel(
     val assetName: String,
     val lowSoundResourceId: Int,
@@ -43,18 +51,6 @@ sealed class GlbModel(
             Bloomspire,
             Cello,
             Munchkin
-        )
-
-        val modelIndices = mapOf<GlbModel, Int>(
-            Pumpod to 0,
-            Pluff to 1,
-            Pillowtri to 2,
-            Swirlnut to 3,
-            Twistbud to 4,
-            Squube to 5,
-            Bloomspire to 6,
-            Cello to 7,
-            Munchkin to 8
         )
     }
 

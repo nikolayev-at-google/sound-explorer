@@ -44,11 +44,9 @@ class GlbModelRepositoryImplTest {
         repository = GlbModelRepositoryImpl(mockSession)
     }
 
-    // Test methods will be added here
 
     @Test
     fun `getOrLoadModel when model is already cached should return cached model`() = runTest {
-        // Arrange
         val modelIdentifier = GlbModel.Bloomspire
 
         // Use reflection to access and populate the private loadedModels cache
@@ -58,10 +56,8 @@ class GlbModelRepositoryImplTest {
         val loadedModelsMap = loadedModelsField.get(repository) as java.util.concurrent.ConcurrentHashMap<GlbModel, Model>
         loadedModelsMap[modelIdentifier] = mockModel
 
-        // Act
-        val result = repository.getOrLoadModel(modelIdentifier)
+        val result = repository.getOrLoadModel(this, modelIdentifier)
 
-        // Assert
         assertWithMessage("Result should be success").that(result.isSuccess).isTrue()
         assertThat(mockModel).isEqualTo(result.getOrNull())
 
@@ -78,7 +74,6 @@ class GlbModelRepositoryImplTest {
 
     @Test
     fun `clear should clear the loadedModels cache`() { // No runTest needed if no coroutines are directly launched by the test logic itself
-        // Arrange
         val modelIdentifier = GlbModel.Bloomspire
 
         // Use reflection to directly add a model to the loadedModels cache
@@ -92,10 +87,8 @@ class GlbModelRepositoryImplTest {
             .that(loadedModelsMap)
             .isNotEmpty()
 
-        // Act
         repository.clear()
 
-        // Assert
         assertWithMessage("Loaded models map should be empty after clear")
             .that(loadedModelsMap)
             .isEmpty()

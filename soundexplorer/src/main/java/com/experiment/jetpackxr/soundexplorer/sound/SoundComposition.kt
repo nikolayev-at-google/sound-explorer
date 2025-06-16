@@ -65,7 +65,7 @@ class SoundComposition  @Inject constructor(
 
     fun registerSoundObject(soundObject: SoundObjectComponent) {
         synchronized(this) {
-            if (this.state.value >= State.PLAYING) {
+            if (this.state.value == State.PLAYING || this.state.value == State.STOPPED) {
                 throw IllegalStateException("Tried to add an component after play() was called.")
             }
 
